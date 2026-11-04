@@ -1,0 +1,19 @@
+{
+    "name": "administrator/saas-barberia",
+    "authors": [
+        {
+            "name": "joseurbi",
+            "email": "jose.urbina17@inacapmail.cl"
+        }
+    ],
+    "require": {
+        "google/apiclient": "^v2.12.0"
+    },
+    "config": {
+        "policy": {
+            "advisories": {
+                "block": false
+            }
+        }
+    }
+}
