@@ -1,293 +1,212 @@
 <?php
+// cliente_reserva.php
 require_once 'db.php';
 
-$selected_barber_id = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 0;
+$staff_id = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 1;
 
-$barber_name = "Barbero Profesional";
-$barber_phone = "569927861737";
+// Obtener datos del barbero específico
+$stmt = $conn->prepare("SELECT id, name, phone, profile_photo FROM barbers WHERE id = ?");
+$stmt->bind_param("i", $staff_id);
+$stmt->execute();
+$barber = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
-if ($selected_barber_id > 0) {
-    $stmt = $conn->prepare("SELECT name, phone FROM barbers WHERE id = ?");
-    $stmt->bind_param("i", $selected_barber_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($row = $res->fetch_assoc()) {
-        $barber_name = $row['name'];
-        if (!empty($row['phone'])) {
-            $barber_phone = preg_replace('/[^0-9]/', '', $row['phone']);
-        }
-    }
+if (!$barber) {
+    echo "<body style='background:#050507; color:#fff; font-family:sans-serif; text-align:center; padding-top:20vh;'><h2>Barbero no encontrado</h2><a href='index.php' style='color:#e11d48;'>Volver al inicio</a></body>";
+    exit;
 }
+
+$barber_name = $barber['name'];
+$barber_phone = preg_replace('/[^0-9]/', '', $barber['phone'] ?? '569927861737');
+$barber_photo = $barber['profile_photo'] ?? '';
+
+// Obtener los servicios específicos configurados por este barbero
+$stmtServ = $conn->prepare("SELECT service_name, price FROM barber_services WHERE staff_id = ?");
+$stmtServ->bind_param("i", $staff_id);
+$stmtServ->execute();
+$serviciosResult = $stmtServ->get_result();
+$stmtServ->close();
+
+// Obtener los horarios configurados por este barbero
+$stmtHours = $conn->prepare("SELECT available_time FROM barber_hours WHERE staff_id = ? ORDER BY available_time ASC");
+$stmtHours->bind_param("i", $staff_id);
+$stmtHours->execute();
+$horariosResult = $stmtHours->get_result();
+$stmtHours->close();
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reserva tu Hora - AgendaBarber</title>
-    <!-- FontAwesome para Iconos Profesionales -->
+    <title>Reservar con <?php echo htmlspecialchars($barber_name); ?> - AgendaBarber</title>
+    <link rel="icon" type="image/png" href="assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SweetAlert2 para Alertas Modernas -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="assets/css/estilos.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            background-color: #0b0b0e;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 30px 20px;
-            min-height: 100vh;
-        }
-        .booking-card {
-            background: rgba(24, 24, 27, 0.75);
-            backdrop-filter: blur(16px);
-            padding: 35px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        h2 {
-            text-align: center;
-            color: #f59e0b;
-            margin-bottom: 25px;
-            font-size: 22px;
-        }
-        .form-group {
-            margin-bottom: 18px;
-        }
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            font-size: 14px;
-            color: #d4d4d8;
-        }
-        label i {
-            color: #f59e0b;
-            margin-right: 6px;
-        }
-        input, select {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 8px;
-            border: 1px solid #3f3f46;
-            background-color: #27272a;
-            color: #fff;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input:focus, select:focus {
-            border-color: #f59e0b;
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-        }
-        .barber-badge {
-            background-color: #27272a;
-            border: 1px solid #3f3f46;
-            padding: 12px;
-            border-radius: 8px;
-            color: #f59e0b;
-            font-weight: 600;
-            font-size: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .time-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 8px;
-        }
-        .time-btn {
-            padding: 10px;
-            background-color: #27272a;
-            border: 1px solid #3f3f46;
-            color: #fff;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        .time-btn:hover {
-            border-color: #f59e0b;
-            background-color: #323238;
-        }
-        .time-btn.selected {
-            background-color: #f59e0b;
-            color: #000;
-            font-weight: bold;
-            border-color: #f59e0b;
-        }
-        /* Estilo para los botones de horas ya ocupadas */
-        .time-btn.booked {
-            background-color: #18181b !important;
-            color: #71717a !important;
-            border-color: #27272a !important;
-            cursor: not-allowed !important;
-            opacity: 0.7;
-        }
-        .no-slots {
-            grid-column: span 3;
-            text-align: center;
-            color: #a1a1aa;
-            font-size: 13px;
-            padding: 10px;
-        }
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background-color: #22c55e;
-            color: #fff;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 15px;
-            margin-top: 20px;
-            transition: background-color 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-submit:hover {
-            background-color: #16a34a;
-        }
-        .spinner {
-            display: none;
-            width: 18px;
-            height: 18px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: #a1a1aa;
-            text-decoration: none;
-            font-size: 13px;
-        }
-        .back-link:hover { color: #fff; }
+        .profile-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e11d48; margin-bottom: 15px; box-shadow: 0 0 20px rgba(225, 29, 72, 0.4); }
+        .avatar-placeholder { width: 120px; height: 120px; border-radius: 50%; background: #e11d48; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; margin-bottom: 15px; border: 3px solid #be123c; box-shadow: 0 0 20px rgba(225, 29, 72, 0.4); }
+        .badge { background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 12px; padding: 5px 14px; border-radius: 20px; font-weight: bold; margin-bottom: 25px; display: inline-block; }
+        .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+        .time-btn { padding: 10px; background-color: rgba(24, 24, 27, 0.8); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; border-radius: 10px; cursor: pointer; text-align: center; font-size: 14px; transition: all 0.2s; }
+        .time-btn:hover { border-color: #e11d48; background-color: rgba(39, 39, 42, 0.9); }
+        .time-btn.selected { background-color: #e11d48; color: #fff; font-weight: bold; border-color: #e11d48; box-shadow: 0 0 15px rgba(225, 29, 72, 0.4); }
+        .time-btn.booked { background-color: #121214 !important; color: #52525b !important; border-color: #18181b !important; cursor: not-allowed !important; opacity: 0.6; }
+        .spinner { display: none; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .booking-section { display: none; }
+        .booking-section.active { display: block; }
     </style>
 </head>
 <body>
 
 <div class="booking-card">
-    <h2><i class="fa-solid fa-calendar-check"></i> Reserva tu Cita</h2>
 
-    <form id="bookingForm">
-        <input type="hidden" id="staff_id" value="<?php echo $selected_barber_id; ?>">
-        <input type="hidden" id="barber_phone" value="<?php echo $barber_phone; ?>">
+    <!-- SECCIÓN 1: Tarjeta Limpia (Foto, Nombre y Botón de Reservar) -->
+    <div id="profileSection" class="booking-section active" style="text-align: center; padding-top: 10px;">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <?php if (!empty($barber_photo)): ?>
+                <img src="<?php echo htmlspecialchars($barber_photo); ?>" alt="Foto" class="profile-img">
+            <?php else: ?>
+                <div class="avatar-placeholder">
+                    <?php echo strtoupper(substr($barber_name, 0, 1)); ?>
+                </div>
+            <?php endif; ?>
 
-        <div class="form-group">
-            <label>Barbero Seleccionado:</label>
-            <div class="barber-badge">
-                <i class="fa-solid fa-user-tie"></i> <?php echo htmlspecialchars($barber_name); ?>
-            </div>
+            <h2 style="margin-bottom: 10px; font-size: 24px; color: #fff;"><?php echo htmlspecialchars($barber_name); ?></h2>
+            <span class="badge"><i class="fa-solid fa-circle-check"></i> Disponible</span>
         </div>
 
-        <div class="form-group">
-            <label for="clientName"><i class="fa-solid fa-user"></i> Tu Nombre y Apellido:</label>
-            <input type="text" id="clientName" name="clientName" placeholder="Ej: Leo Pérez" required>
-        </div>
-
-        <div class="form-group">
-            <label for="clientPhone"><i class="fa-solid fa-phone"></i> Tu Teléfono / WhatsApp:</label>
-            <input type="tel" id="clientPhone" name="clientPhone" placeholder="Ej: 927861737" required>
-        </div>
-
-        <div class="form-group">
-            <label for="service"><i class="fa-solid fa-scissors"></i> Servicio:</label>
-            <select name="service" id="service" required>
-                <option value="Corte de Pelo ($8.000)">Corte de Pelo ($8.000)</option>
-                <option value="Corte + Barba ($12.000)">Corte + Barba ($12.000)</option>
-                <option value="Perfilado de Barba ($5.000)">Perfilado de Barba ($5.000)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="date"><i class="fa-regular fa-calendar-days"></i> Fecha de la Cita:</label>
-            <input type="date" id="date" name="date" value="<?php echo date('Y-m-d'); ?>" required>
-        </div>
-
-        <div class="form-group">
-            <label><i class="fa-regular fa-clock"></i> Selecciona un Horario:</label>
-            <div class="time-grid" id="timeGrid">
-                <button type="button" class="time-btn" data-time="10:00">10:00</button>
-                <button type="button" class="time-btn" data-time="10:45">10:45</button>
-                <button type="button" class="time-btn" data-time="11:30">11:30</button>
-                <button type="button" class="time-btn" data-time="12:15">12:15</button>
-                <button type="button" class="time-btn" data-time="15:00">15:00</button>
-                <button type="button" class="time-btn" data-time="15:45">15:45</button>
-                <button type="button" class="time-btn" data-time="16:30">16:30</button>
-                <button type="button" class="time-btn" data-time="17:15">17:15</button>
-                <button type="button" class="time-btn" data-time="18:00">18:00</button>
-            </div>
-            <input type="hidden" id="selectedTime" name="time" required>
-        </div>
-
-        <button type="submit" class="btn-submit" id="submitBtn">
-            <span id="btnText"><i class="fa-solid fa-check"></i> Confirmar y Reservar</span>
-            <div class="spinner" id="btnSpinner"></div>
+        <button type="button" class="btn-primary" onclick="mostrarFormulario()" style="display: block; width: 100%; text-decoration: none; padding: 14px; font-size: 15px;">
+            <i class="fa-regular fa-calendar-days"></i> Reservar Cita
         </button>
-    </form>
+    </div>
 
-    <a href="cliente_barberos.php" class="back-link"><i class="fa-solid fa-arrow-left"></i> Volver a la lista de barberos</a>
+    <!-- SECCIÓN 2: Formulario de Reserva y Horarios -->
+    <div id="formSection" class="booking-section">
+        <div style="display: flex; align-items: center; margin-bottom: 20px; gap: 12px;">
+            <button type="button" onclick="mostrarPerfil()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h2 style="margin: 0; font-size: 20px; text-align: left;">Selecciona tu <span>Cita</span></h2>
+        </div>
+        <p style="margin-bottom: 20px; font-size: 13px;">Estás agendando con <strong style="color: #fff;"><?php echo htmlspecialchars($barber_name); ?></strong></p>
+
+        <form id="bookingForm">
+            <input type="hidden" id="staff_id" value="<?php echo $staff_id; ?>">
+            <input type="hidden" id="barber_phone" value="<?php echo htmlspecialchars($barber_phone); ?>">
+
+            <div class="form-group">
+                <label for="clientName"><i class="fa-solid fa-user"></i> Tu Nombre:</label>
+                <input type="text" id="clientName" placeholder="Ej: Carlos Soto" required>
+            </div>
+
+            <div class="form-group">
+                <label for="clientPhone"><i class="fa-solid fa-phone"></i> Tu Teléfono / WhatsApp:</label>
+                <input type="tel" id="clientPhone" placeholder="Ej: 927861737" required>
+            </div>
+
+            <div class="form-group">
+                <label for="service"><i class="fa-solid fa-list-check"></i> Servicio:</label>
+                <select id="service" required>
+                    <?php if ($serviciosResult && $serviciosResult->num_rows > 0): ?>
+                        <?php while($serv = $serviciosResult->fetch_assoc()): ?>
+                            <option value="<?php echo htmlspecialchars($serv['service_name'] . ' ($' . number_format($serv['price'], 0, ',', '.') . ')'); ?>">
+                                <?php echo htmlspecialchars($serv['service_name'] . ' ($' . number_format($serv['price'], 0, ',', '.') . ')'); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <option value="Corte General">Corte General</option>
+                    <?php endif; ?>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="date"><i class="fa-regular fa-calendar-days"></i> Fecha:</label>
+                <input type="date" id="date" value="<?php echo date('Y-m-d'); ?>" required>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-regular fa-clock"></i> Horarios Disponibles:</label>
+                <!-- Horarios cargados dinámicamente desde la base de datos del barbero -->
+                <div class="time-grid" id="timeGrid">
+                    <?php if ($horariosResult && $horariosResult->num_rows > 0): ?>
+                        <?php while($hor = $horariosResult->fetch_assoc()): ?>
+                            <?php 
+                                // Limpiar formato de hora por si viene como HH:MM:SS de la base de datos
+                                $timeClean = substr($hor['available_time'], 0, 5); 
+                            ?>
+                            <button type="button" class="time-btn" data-time="<?php echo $timeClean; ?>"><?php echo $timeClean; ?></button>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <p style="color: #71717a; font-size: 13px; grid-column: span 3; text-align: center;">Este barbero no ha configurado horarios aún.</p>
+                    <?php endif; ?>
+                </div>
+                <input type="hidden" id="selectedTime" required>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4); margin-top: 20px;">
+                <span id="btnText"><i class="fa-solid fa-check"></i> Confirmar y Reservar</span>
+                <div class="spinner" id="btnSpinner"></div>
+            </button>
+        </form>
+    </div>
+
 </div>
 
 <script>
-    const timeGrid = document.getElementById('timeGrid');
-    const timeButtons = document.querySelectorAll('.time-btn');
-    const hiddenTimeInput = document.getElementById('selectedTime');
+    const profileSection = document.getElementById('profileSection');
+    const formSection = document.getElementById('formSection');
+
+    function mostrarFormulario() {
+        profileSection.classList.remove('active');
+        formSection.classList.add('active');
+        initTimeButtons();
+        updateAvailableTimes();
+    }
+
+    function mostrarPerfil() {
+        formSection.classList.remove('active');
+        profileSection.classList.add('active');
+    }
+
     const dateInput = document.getElementById('date');
     const staffIdInput = document.getElementById('staff_id');
+    const hiddenTimeInput = document.getElementById('selectedTime');
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
 
+    function initTimeButtons() {
+        const timeButtons = document.querySelectorAll('.time-btn');
+        timeButtons.forEach(button => {
+            button.replaceWith(button.cloneNode(true)); // Limpiar eventos anteriores
+        });
+
+        const newTimeButtons = document.querySelectorAll('.time-btn');
+        newTimeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (button.classList.contains('booked') || button.disabled) return;
+                newTimeButtons.forEach(btn => { if(!btn.classList.contains('booked')) btn.classList.remove('selected'); });
+                button.classList.add('selected');
+                hiddenTimeInput.value = button.getAttribute('data-time');
+            });
+        });
+    }
+
     function updateAvailableTimes() {
         const staffId = staffIdInput.value;
         let dateVal = dateInput.value;
-
         if (!staffId || !dateVal) return;
-
-        // Normalizar formato de fecha si el navegador lo invierte
-        if (dateVal.includes('-') && dateVal.split('-')[0].length !== 4) {
-            const parts = dateVal.split('-');
-            if (parts[2].length === 4) {
-                dateVal = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            }
-        }
-
-        hiddenTimeInput.value = '';
         
-        // Restablecer estado de botones
+        hiddenTimeInput.value = '';
+        const timeButtons = document.querySelectorAll('.time-btn');
         timeButtons.forEach(btn => {
             btn.classList.remove('selected', 'booked');
             btn.disabled = false;
-            const timeVal = btn.getAttribute('data-time');
-            btn.innerHTML = timeVal;
+            btn.innerHTML = btn.getAttribute('data-time');
         });
-
-        const oldMsg = document.getElementById('noSlotsMsg');
-        if (oldMsg) oldMsg.remove();
 
         fetch(`api_get_booked_times.php?staff_id=${staffId}&date=${dateVal}`)
             .then(res => res.json())
@@ -295,71 +214,31 @@ if ($selected_barber_id > 0) {
                 if (data.booked_times) {
                     timeButtons.forEach(btn => {
                         const timeVal = btn.getAttribute('data-time');
-                        const isBooked = data.booked_times.some(bookedTime => bookedTime.startsWith(timeVal));
-                        
-                        if (isBooked) {
+                        if (data.booked_times.some(bt => bt.startsWith(timeVal))) {
                             btn.classList.add('booked');
                             btn.disabled = true;
-                            btn.innerHTML = `${timeVal} <span style="font-size: 11px; display: block; color: #ef4444; font-weight: 600;">Ocupado</span>`;
+                            btn.innerHTML = `${timeVal} <span style="font-size: 10px; display: block; color: #ef4444;">Ocupado</span>`;
                         }
                     });
                 }
-            })
-            .catch(err => console.error("Error consultando disponibilidad:", err));
+            }).catch(err => console.error(err));
     }
 
     dateInput.addEventListener('change', updateAvailableTimes);
-    updateAvailableTimes();
-
-    timeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            if (button.classList.contains('booked') || button.disabled) return;
-            
-            timeButtons.forEach(btn => {
-                if(!btn.classList.contains('booked')) {
-                    btn.classList.remove('selected');
-                }
-            });
-            button.classList.add('selected');
-            hiddenTimeInput.value = button.getAttribute('data-time');
-        });
-    });
 
     document.getElementById('bookingForm').addEventListener('submit', function(e) {
         e.preventDefault();
-
         const staffId = staffIdInput.value;
         const barberPhone = document.getElementById('barber_phone').value;
 
-        if (!staffId || staffId == "0") {
-            Swal.fire({
-                title: 'Atención',
-                text: 'Debes seleccionar un barbero desde el catálogo primero.',
-                icon: 'warning',
-                background: '#18181b',
-                color: '#fff',
-                confirmButtonColor: '#f59e0b'
-            }).then(() => {
-                window.location.href = 'cliente_barberos.php';
-            });
-            return;
-        }
-
         if (!hiddenTimeInput.value) {
-            Swal.fire({
-                title: 'Falta Horario',
-                text: 'Por favor selecciona un horario disponible.',
-                icon: 'info',
-                background: '#18181b',
-                color: '#fff',
-                confirmButtonColor: '#f59e0b'
-            });
+            Swal.fire({ title: 'Falta Horario', text: 'Selecciona un horario disponible.', icon: 'info', background: '#18181b', color: '#fff', confirmButtonColor: '#e11d48' });
             return;
         }
 
         submitBtn.disabled = true;
         btnText.innerText = 'Procesando...';
-        btnSpinner.style.display = 'block';
+        btnSpinner.style.display = 'inline-block';
 
         const formData = {
             tenant_id: 1,
@@ -376,68 +255,25 @@ if ($selected_barber_id > 0) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         })
-        .then(response => response.text())
-        .then(text => {
-            try {
-                const data = JSON.parse(text);
-                if (data.status === 'success' || data.success) {
-                    const mensajeWS = `Hola, acabo de agendar una cita para el ${formData.date} a las ${formData.time} hrs para ${formData.service}. Mi nombre es ${formData.clientName}.`;
-                    
-                    Swal.fire({
-                        title: '¡Cita Reservada con Éxito!',
-                        text: 'Sincronizada con Google Calendar. Te redirigiremos a WhatsApp...',
-                        icon: 'success',
-                        background: '#18181b',
-                        color: '#fff',
-                        confirmButtonColor: '#22c55e',
-                        timer: 2500,
-                        timerProgressBar: true
-                    }).then(() => {
-                        window.location.href = `https://wa.me/${barberPhone}?text=${encodeURIComponent(mensajeWS)}`;
-                    });
-                } else {
-                    Swal.fire({
-                        title: 'Aviso',
-                        text: data.message || 'Intente nuevamente',
-                        icon: 'error',
-                        background: '#18181b',
-                        color: '#fff',
-                        confirmButtonColor: '#f59e0b'
-                    });
-                    submitBtn.disabled = false;
-                    btnText.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar y Reservar';
-                    btnSpinner.style.display = 'none';
-                    updateAvailableTimes();
-                }
-            } catch (e) {
-                Swal.fire({
-                    title: 'Error de Servidor',
-                    text: text,
-                    icon: 'error',
-                    background: '#18181b',
-                    color: '#fff',
-                    confirmButtonColor: '#f59e0b'
-                });
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success' || data.success) {
+                const mensajeWS = `Hola, acabo de agendar una cita para el ${formData.date} a las ${formData.time} hrs para ${formData.service}. Mi nombre es ${formData.clientName}.`;
+                Swal.fire({ title: '¡Cita Reservada!', text: 'Redirigiendo a WhatsApp...', icon: 'success', background: '#18181b', color: '#fff', timer: 2000, showConfirmButton: false })
+                .then(() => { window.location.href = `https://wa.me/${barberPhone}?text=${encodeURIComponent(mensajeWS)}`; });
+            } else {
+                Swal.fire({ title: 'Aviso', text: data.message || 'Intente nuevamente', icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#e11d48' });
                 submitBtn.disabled = false;
                 btnText.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar y Reservar';
                 btnSpinner.style.display = 'none';
             }
-        })
-        .catch(error => {
-            Swal.fire({
-                title: 'Error de Red',
-                text: 'Ocurrió un error al procesar la solicitud.',
-                icon: 'error',
-                background: '#18181b',
-                color: '#fff',
-                confirmButtonColor: '#f59e0b'
-            });
+        }).catch(err => {
+            Swal.fire({ title: 'Error de Red', text: 'Ocurrió un error.', icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#e11d48' });
             submitBtn.disabled = false;
             btnText.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar y Reservar';
             btnSpinner.style.display = 'none';
         });
     });
 </script>
-
 </body>
 </html>

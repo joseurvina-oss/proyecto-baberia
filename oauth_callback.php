@@ -1,4 +1,5 @@
 <?php
+// oauth_callback.php - Procesa el código de Google y guarda los tokens en la BD
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -8,7 +9,7 @@ require_once 'vendor/autoload.php';
 
 // Verificar que el barbero esté logueado
 if (!isset($_SESSION['barber_id'])) {
-    header("Location: login_barber.php");
+    header("Location: login_barbero.php");
     exit();
 }
 
@@ -26,11 +27,9 @@ if (isset($_GET['code'])) {
         $barber_id = $_SESSION['barber_id'];
         $tokenJson = json_encode($token);
         
-        // Extraer refresh token si viene incluido (Google solo lo manda la primera vez)
+        // Extraer refresh token si viene incluido (Google solo lo manda la primera vez o al forzar consentimiento)
         $refreshToken = isset($token['refresh_token']) ? $token['refresh_token'] : null;
 
-        // Actualizamos la consulta para guardar ambos tokens de forma segura
-        // Nota: Asegúrate de tener ambas columnas en tu tabla 'barbers'
         $sql = "UPDATE barbers SET google_access_token = ?";
         if ($refreshToken) {
             $sql .= ", google_refresh_token = ?";
@@ -50,7 +49,8 @@ if (isset($_GET['code'])) {
         }
         
         if ($stmt->execute()) {
-            header("Location: profile_barber.php?google=success");
+            // Redirige al panel del barbero con un aviso de éxito opcional
+            header("Location: dashboard_barbero.php?google=success");
             exit();
         } else {
             echo "Error al guardar el token en la base de datos: " . $stmt->error;
