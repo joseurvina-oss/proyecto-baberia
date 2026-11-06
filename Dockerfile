@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Instalar extensiones de base de datos
+# Instalar extensiones de base de datos necesarias
 RUN docker-php-ext-install mysqli pdo_mysql
 
 # Forzar el uso exclusivo de mpm_prefork eliminando los otros módulos
