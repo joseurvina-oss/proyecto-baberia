@@ -2,3 +2,4 @@
 credenciales.json
 .env
 *.log
+token.json
