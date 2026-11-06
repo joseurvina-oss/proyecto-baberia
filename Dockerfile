@@ -11,7 +11,7 @@ COPY . /var/www/html/
 
 # Configurar Nginx para que apunte a la carpeta del proyecto
 RUN echo 'server { \
-    listen 80; \
+    listen ${PORT}; \
     root /var/www/html; \
     index index.php index.html; \
     location / { \
@@ -24,8 +24,3 @@ RUN echo 'server { \
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
     } \
 }' > /etc/nginx/sites-available/default
-
-EXPOSE 80
-
-# Iniciar PHP-FPM y Nginx juntos
-CMD service nginx start && php-fpm
