@@ -1,10 +1,11 @@
 <?php
-$host = "localhost";
-$user = "root";
-$password = "12345678";
-$database = "saas_barberias";
+$host = getenv('MYSQLHOST') ?: 'localhost';
+$user = getenv('MYSQLUSER') ?: 'root';
+$password = getenv('MYSQLPASSWORD') ?: '12345678';
+$database = getenv('MYSQLDATABASE') ?: 'railway';
+$port = getenv('MYSQLPORT') ?: 3306;
 
-$conn = new mysqli($host, $user, $password, $database);
+$conn = new mysqli($host, $user, $password, $database, (int)$port);
 
 if ($conn->connect_error) {
     die(json_encode([
