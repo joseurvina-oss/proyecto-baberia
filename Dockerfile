@@ -3,15 +3,15 @@ FROM php:8.2-fpm
 # Instalar extensiones de base de datos necesarias
 RUN docker-php-ext-install mysqli pdo_mysql
 
-# Instalar Nginx
-RUN apt-get update && apt-get install -y nginx
+# Instalar Nginx y gettext-base (para usar envsubst)
+RUN apt-get update && apt-get install -y nginx gettext-base
 
-# Copiar el código fuente al directorio web
+# Copiar el código fuente
 COPY . /var/www/html/
 
-# Configurar Nginx para que apunte a la carpeta del proyecto
+# Crear una plantilla de configuración de Nginx usando $PORT
 RUN echo 'server { \
-    listen ${PORT}; \
+    listen 80; \
     root /var/www/html; \
     index index.php index.html; \
     location / { \
@@ -24,3 +24,8 @@ RUN echo 'server { \
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
     } \
 }' > /etc/nginx/sites-available/default
+
+EXPOSE 80
+
+# Script para reemplazar el puerto por defecto de Railway y arrancar los servicios
+CMD sed -i "s/listen 80;/listen $PORT;/g" /etc/nginx/sites-available/default && service nginx start && php-fpm
