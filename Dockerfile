@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y nginx
 # Copiar el código fuente al servidor web
 COPY . /var/www/html/
 
-# Configurar Nginx para que use la variable $PORT de Railway
+# Configurar Nginx para que use un marcador de puerto
 RUN echo 'server { \
     listen __PORT__; \
     root /var/www/html; \
@@ -27,5 +27,5 @@ RUN echo 'server { \
 
 EXPOSE 80
 
-# Reemplazar __PORT__ por la variable de entorno $PORT y arrancar los servicios
+# Reemplazar el marcador por la variable $PORT de Railway y arrancar los servicios
 CMD sed -i "s/__PORT__/$PORT/g" /etc/nginx/sites-available/default && service nginx start && php-fpm -F
