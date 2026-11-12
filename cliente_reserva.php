@@ -8,7 +8,8 @@ $staff_id = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 1;
 $stmt = $conn->prepare("SELECT id, name, phone, profile_photo FROM barbers WHERE id = ?");
 $stmt->bind_param("i", $staff_id);
 $stmt->execute();
-$barber = $stmt->get_result()->fetch_assoc();
+$result = $stmt->get_result();
+$barber = $result->fetch_assoc();
 $stmt->close();
 
 if (!$barber) {
@@ -19,27 +20,12 @@ if (!$barber) {
 $barber_name = $barber['name'];
 $barber_phone = preg_replace('/[^0-9]/', '', $barber['phone'] ?? '569927861737');
 $barber_photo = $barber['profile_photo'] ?? '';
-
-// Obtener los servicios específicos configurados por este barbero
-$stmtServ = $conn->prepare("SELECT service_name, price FROM barber_services WHERE staff_id = ?");
-$stmtServ->bind_param("i", $staff_id);
-$stmtServ->execute();
-$serviciosResult = $stmtServ->get_result();
-$stmtServ->close();
-
-// Obtener los horarios configurados por este barbero
-$stmtHours = $conn->prepare("SELECT available_time FROM barber_hours WHERE staff_id = ? ORDER BY available_time ASC");
-$stmtHours->bind_param("i", $staff_id);
-$stmtHours->execute();
-$horariosResult = $stmtHours->get_result();
-$stmtHours->close();
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Reservar con <?php echo htmlspecialchars($barber_name); ?> - AgendaBarber</title>
-    <link rel="icon" type="image/png" href="assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/estilos.css">
@@ -63,7 +49,7 @@ $stmtHours->close();
 
 <div class="booking-card">
 
-    <!-- SECCIÓN 1: Tarjeta Limpia (Foto, Nombre y Botón de Reservar) -->
+    <!-- SECCIÓN 1: Perfil Esencial (Foto, Nombre y Botón) -->
     <div id="profileSection" class="booking-section active" style="text-align: center; padding-top: 10px;">
         <div style="display: flex; flex-direction: column; align-items: center;">
             <?php if (!empty($barber_photo)): ?>
@@ -110,15 +96,9 @@ $stmtHours->close();
             <div class="form-group">
                 <label for="service"><i class="fa-solid fa-list-check"></i> Servicio:</label>
                 <select id="service" required>
-                    <?php if ($serviciosResult && $serviciosResult->num_rows > 0): ?>
-                        <?php while($serv = $serviciosResult->fetch_assoc()): ?>
-                            <option value="<?php echo htmlspecialchars($serv['service_name'] . ' ($' . number_format($serv['price'], 0, ',', '.') . ')'); ?>">
-                                <?php echo htmlspecialchars($serv['service_name'] . ' ($' . number_format($serv['price'], 0, ',', '.') . ')'); ?>
-                            </option>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <option value="Corte General">Corte General</option>
-                    <?php endif; ?>
+                    <option value="Corte de Pelo ($8.000)">Corte de Pelo ($8.000)</option>
+                    <option value="Corte + Barba ($12.000)">Corte + Barba ($12.000)</option>
+                    <option value="Perfilado de Barba ($5.000)">Perfilado de Barba ($5.000)</option>
                 </select>
             </div>
 
@@ -129,19 +109,16 @@ $stmtHours->close();
 
             <div class="form-group">
                 <label><i class="fa-regular fa-clock"></i> Horarios Disponibles:</label>
-                <!-- Horarios cargados dinámicamente desde la base de datos del barbero -->
                 <div class="time-grid" id="timeGrid">
-                    <?php if ($horariosResult && $horariosResult->num_rows > 0): ?>
-                        <?php while($hor = $horariosResult->fetch_assoc()): ?>
-                            <?php 
-                                // Limpiar formato de hora por si viene como HH:MM:SS de la base de datos
-                                $timeClean = substr($hor['available_time'], 0, 5); 
-                            ?>
-                            <button type="button" class="time-btn" data-time="<?php echo $timeClean; ?>"><?php echo $timeClean; ?></button>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <p style="color: #71717a; font-size: 13px; grid-column: span 3; text-align: center;">Este barbero no ha configurado horarios aún.</p>
-                    <?php endif; ?>
+                    <button type="button" class="time-btn" data-time="10:00">10:00</button>
+                    <button type="button" class="time-btn" data-time="10:45">10:45</button>
+                    <button type="button" class="time-btn" data-time="11:30">11:30</button>
+                    <button type="button" class="time-btn" data-time="12:15">12:15</button>
+                    <button type="button" class="time-btn" data-time="15:00">15:00</button>
+                    <button type="button" class="time-btn" data-time="15:45">15:45</button>
+                    <button type="button" class="time-btn" data-time="16:30">16:30</button>
+                    <button type="button" class="time-btn" data-time="17:15">17:15</button>
+                    <button type="button" class="time-btn" data-time="18:00">18:00</button>
                 </div>
                 <input type="hidden" id="selectedTime" required>
             </div>
@@ -162,7 +139,6 @@ $stmtHours->close();
     function mostrarFormulario() {
         profileSection.classList.remove('active');
         formSection.classList.add('active');
-        initTimeButtons();
         updateAvailableTimes();
     }
 
@@ -171,29 +147,13 @@ $stmtHours->close();
         profileSection.classList.add('active');
     }
 
+    const timeButtons = document.querySelectorAll('.time-btn');
+    const hiddenTimeInput = document.getElementById('selectedTime');
     const dateInput = document.getElementById('date');
     const staffIdInput = document.getElementById('staff_id');
-    const hiddenTimeInput = document.getElementById('selectedTime');
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
-
-    function initTimeButtons() {
-        const timeButtons = document.querySelectorAll('.time-btn');
-        timeButtons.forEach(button => {
-            button.replaceWith(button.cloneNode(true)); // Limpiar eventos anteriores
-        });
-
-        const newTimeButtons = document.querySelectorAll('.time-btn');
-        newTimeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                if (button.classList.contains('booked') || button.disabled) return;
-                newTimeButtons.forEach(btn => { if(!btn.classList.contains('booked')) btn.classList.remove('selected'); });
-                button.classList.add('selected');
-                hiddenTimeInput.value = button.getAttribute('data-time');
-            });
-        });
-    }
 
     function updateAvailableTimes() {
         const staffId = staffIdInput.value;
@@ -201,7 +161,6 @@ $stmtHours->close();
         if (!staffId || !dateVal) return;
         
         hiddenTimeInput.value = '';
-        const timeButtons = document.querySelectorAll('.time-btn');
         timeButtons.forEach(btn => {
             btn.classList.remove('selected', 'booked');
             btn.disabled = false;
@@ -225,6 +184,15 @@ $stmtHours->close();
     }
 
     dateInput.addEventListener('change', updateAvailableTimes);
+
+    timeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.classList.contains('booked') || button.disabled) return;
+            timeButtons.forEach(btn => { if(!btn.classList.contains('booked')) btn.classList.remove('selected'); });
+            button.classList.add('selected');
+            hiddenTimeInput.value = button.getAttribute('data-time');
+        });
+    });
 
     document.getElementById('bookingForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -275,5 +243,13 @@ $stmtHours->close();
         });
     });
 </script>
+
+<!-- Enlace movido correctamente fuera del script -->
+<div style="text-align: center; margin-top: 20px; padding-bottom: 30px;">
+    <a href="login_barbero.php" style="color: #e11d48; text-decoration: none; font-weight: 600;">
+        <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión como Barbero
+    </a>
+</div>
+
 </body>
 </html>
