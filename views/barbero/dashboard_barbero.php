@@ -66,9 +66,9 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
     <meta charset="UTF-8">
     <title>Panel de Barbero - AgendaBarber</title>
     <!-- Rutas absolutas a los assets -->
-    <link rel="icon" type="image/png" href="/saas-barberia/public/assets/imagenes/logo_favicon.png">
+    <link rel="icon" type="image/png" href="/public/assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
+    <link rel="stylesheet" href="/public/assets/css/estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .dashboard-container { max-width: 900px; width: 100%; z-index: 2; margin: 30px auto; }
@@ -120,7 +120,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
                     <i class="fa-solid fa-user-pen"></i> Editar Perfil
                 </a>
                 <!-- Enlace de Logout actualizado al router -->
-                <a href="/saas-barberia/public/logout" class="btn-action btn-logout">
+                <a href="/public/logout" class="btn-action btn-logout">
                     <i class="fa-solid fa-right-from-bracket"></i> Salir
                 </a>
             </div>
