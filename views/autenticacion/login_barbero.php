@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['barber_id'] = $row['id'];
                 $_SESSION['barber_name'] = $row['name'];
                 
-                // Redirección segura a la carpeta public
+                // Redirección segura
                 header("Location: /public/dashboard");
                 exit;
             }
@@ -48,10 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Iniciar Sesión Barbero - AgendaBarber</title>
     
-    <!-- Rutas absolutas garantizadas para Railway -->
+    <!-- Rutas absolutas exactas según tu árbol de carpetas -->
     <link rel="icon" type="image/png" href="/public/assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/public/css/estilos.css">
+    <!-- ¡Ruta del CSS corregida agregando /assets/! -->
+    <link rel="stylesheet" href="/public/assets/css/estilos.css">
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -60,14 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="booking-card" style="max-width: 400px; margin: 10vh auto;">
         <div style="text-align: center; margin-bottom: 25px;">
             <div style="margin-bottom: 12px;">
-                <!-- Ruta del logo garantizada -->
                 <img src="/public/assets/imagenes/logo.png" alt="Logo" style="width: 75px; height: 75px; object-fit: cover; border-radius: 50%; border: 2px solid #e11d48; box-shadow: 0 4px 15px rgba(225,29,72,0.4);">
             </div>
             <h2 style="font-size: 24px; margin-bottom: 5px;">Portal de <span>Barberos</span></h2>
             <p style="font-size: 13px; color: #a1a1aa;">Inicia sesión para gestionar tus citas y precios.</p>
         </div>
 
-        <!-- Acción del formulario apuntando a la ruta correcta -->
         <form action="/public/login" method="POST">
             <div class="form-group">
                 <label for="email"><i class="fa-solid fa-envelope"></i> Correo Electrónico:</label>
