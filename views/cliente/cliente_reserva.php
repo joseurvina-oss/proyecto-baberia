@@ -1,6 +1,5 @@
 <?php
 // views/cliente/cliente_reserva.php
-// 1. RUTA DE BASE DE DATOS ACTUALIZADA
 require_once __DIR__ . '/../../src/config/db.php';
 
 $staff_id = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 1;
@@ -54,7 +53,6 @@ $barber_photo = $barber['profile_photo'] ?? '';
     <div id="profileSection" class="booking-section active" style="text-align: center; padding-top: 10px;">
         <div style="display: flex; flex-direction: column; align-items: center;">
             <?php if (!empty($barber_photo)): ?>
-                <!-- 3. RUTA DE IMAGEN ACTUALIZADA CON BASENAME -->
                 <?php $nombreFoto = basename($barber_photo); ?>
                 <img src="/public/uploads/<?php echo htmlspecialchars($nombreFoto); ?>" alt="Foto" class="profile-img">
             <?php else: ?>
@@ -193,7 +191,6 @@ $barber_photo = $barber['profile_photo'] ?? '';
             btn.innerHTML = btn.getAttribute('data-time');
         });
 
-        // 4. RUTA API HORARIOS CORREGIDA
         fetch(`/public/api_get_booked_times.php?staff_id=${staffId}&date=${dateVal}`)
             .then(res => res.json())
             .then(data => {
@@ -245,7 +242,6 @@ $barber_photo = $barber['profile_photo'] ?? '';
             time: hiddenTimeInput.value
         };
 
-        // 5. RUTA API RESERVA CORREGIDA
         fetch('/public/api_booking.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -277,6 +273,7 @@ $barber_photo = $barber['profile_photo'] ?? '';
             btnText.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar y Reservar';
             btnSpinner.style.display = 'none';
         });
+    });
 </script>
 
 </body>
