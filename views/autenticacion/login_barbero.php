@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- 3. RUTAS DE ASSETS ACTUALIZADAS (Rutas absolutas desde la raíz de tu proyecto local) -->
     <link rel="icon" type="image/png" href="/saas-barberia/public/assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
+    <link rel="stylesheet" href="/saas-barberia/public/css/estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
