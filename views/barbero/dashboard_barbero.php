@@ -99,10 +99,13 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
 
     <div class="dashboard-container">
         <!-- Cabecera -->
-        <div class="header-box">
+<!-- Cabecera -->
+<div class="header-box">
             <div class="barber-info">
                 <?php if (!empty($barberData['profile_photo'])): ?>
-                    <img src="/public/<?php echo htmlspecialchars($barberData['profile_photo']); ?>" alt="Foto" class="barber-avatar">
+                    <!-- Fix: Extraemos solo el nombre de la foto para evitar rutas duplicadas -->
+                    <?php $nombreFoto = basename($barberData['profile_photo']); ?>
+                    <img src="/public/uploads/<?php echo htmlspecialchars($nombreFoto); ?>" alt="Foto" class="barber-avatar">
                 <?php else: ?>
                     <div class="avatar-placeholder-small">
                         <?php echo strtoupper(substr($barberData['name'], 0, 1)); ?>
@@ -115,11 +118,11 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <!-- Enlace editado -->
-                <a href="/saas-barberia/public/editar_perfil" class="btn-action btn-edit">
+                <!-- Fix: Enlace editado para Railway (se eliminó /saas-barberia/) -->
+                <a href="/public/editar_perfil" class="btn-action btn-edit">
                     <i class="fa-solid fa-user-pen"></i> Editar Perfil
                 </a>
-                <!-- Enlace de Logout actualizado al router -->
+                <!-- Enlace de Logout actualizado -->
                 <a href="/public/logout" class="btn-action btn-logout">
                     <i class="fa-solid fa-right-from-bracket"></i> Salir
                 </a>
