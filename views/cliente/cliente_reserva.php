@@ -251,7 +251,14 @@ $barber_photo = $barber['profile_photo'] ?? '';
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         })
-        .then(res => res.json())
+        .then(async res => {
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(text || `Error HTTP ${res.status}`);
+            }
+        })
         .then(data => {
             if (data.status === 'success' || data.success) {
                 const mensajeWS = `Hola, acabo de agendar una cita para el ${formData.date} a las ${formData.time} hrs para ${formData.service}. Mi nombre es ${formData.clientName}.`;
@@ -264,12 +271,12 @@ $barber_photo = $barber['profile_photo'] ?? '';
                 btnSpinner.style.display = 'none';
             }
         }).catch(err => {
-            Swal.fire({ title: 'Error de Red', text: 'Ocurrió un error.', icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#e11d48' });
+            console.error('Detalle del error:', err);
+            Swal.fire({ title: 'Detalle del Error', text: err.message.replace(/<[^>]*>?/gm, '').substring(0, 180), icon: 'error', background: '#18181b', color: '#fff', confirmButtonColor: '#e11d48' });
             submitBtn.disabled = false;
             btnText.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar y Reservar';
             btnSpinner.style.display = 'none';
         });
-    });
 </script>
 
 </body>
