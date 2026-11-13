@@ -25,7 +25,6 @@ if ($staff_id <= 0 || empty($client_name) || empty($appointment_date) || empty($
     exit;
 }
 
-// INSERT limpio sin service_details
 $stmt = $conn->prepare("INSERT INTO bookings (tenant_id, staff_id, client_name, client_phone, service, appointment_date, appointment_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed')");
 $stmt->bind_param("iisssss", $tenant_id, $staff_id, $client_name, $client_phone, $service, $appointment_date, $appointment_time);
 
@@ -41,30 +40,51 @@ if ($stmt->execute()) {
 
     if ($barberTokens && !empty($barberTokens['google_access_token'])) {
         try {
-            $client = new Google_Client();
-            $client->setAuthConfig(__DIR__ . '/../config/credenciales.json');
-            $client->addScope(Google_Service_Calendar::CALENDAR);
-
-            $accessToken = json_decode($barberTokens['google_access_token'], true);
-            if (!$accessToken) {
-                $accessToken = $barberTokens['google_access_token'];
-            }
+            $client = new Google\Client();
             
-            $tokenArray = [
-                'access_token' => is_array($accessToken) ? $accessToken['access_token'] : $barberTokens['google_access_token'],
-                'refresh_token' => $barberTokens['google_refresh_token'] ?? '',
-                'created' => time()
-            ];
-
-            $client->setAccessToken($tokenArray);
-
-            if ($client->isAccessTokenExpired() && !empty($barberTokens['google_refresh_token'])) {
-                $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+            // Cargar credenciales desde Railway (ENV) o archivo local
+            $credentialsPath = __DIR__ . '/../config/credenciales.json';
+            if (!empty(getenv('GOOGLE_CREDENTIALS_JSON'))) {
+                $client->setAuthConfig(json_decode(getenv('GOOGLE_CREDENTIALS_JSON'), true));
+            } elseif (file_exists($credentialsPath)) {
+                $client->setAuthConfig($credentialsPath);
+            } else {
+                throw new Exception("No se encontraron credenciales de Google.");
             }
 
-            $serviceCalendar = new Google_Service_Calendar($client);
+            $client->addScope(Google\Service\Calendar::CALENDAR_EVENTS);
 
-            $event = new Google_Service_Calendar_Event([
+            // Restaurar el objeto token completo (con su 'created' y 'expires_in' reales)
+            $accessToken = json_decode($barberTokens['google_access_token'], true);
+            if (!is_array($accessToken)) {
+                $accessToken = [
+                    'access_token' => $barberTokens['google_access_token'],
+                    'refresh_token' => $barberTokens['google_refresh_token'] ?? '',
+                    'expires_in' => 3599,
+                    'created' => time() - 3600
+                ];
+            }
+
+            $client->setAccessToken($accessToken);
+
+            // Renovar automáticamente si expiró y guardar el nuevo token en BD
+            if ($client->isAccessTokenExpired()) {
+                $refreshToken = $barberTokens['google_refresh_token'] ?: ($accessToken['refresh_token'] ?? '');
+                if (!empty($refreshToken)) {
+                    $newToken = $client->fetchAccessTokenWithRefreshToken($refreshToken);
+                    if (!isset($newToken['error'])) {
+                        $newTokenJson = json_encode($client->getAccessToken());
+                        $stmtUpdToken = $conn->prepare("UPDATE barbers SET google_access_token = ? WHERE id = ?");
+                        $stmtUpdToken->bind_param("si", $newTokenJson, $staff_id);
+                        $stmtUpdToken->execute();
+                        $stmtUpdToken->close();
+                    }
+                }
+            }
+
+            $serviceCalendar = new Google\Service\Calendar($client);
+
+            $event = new Google\Service\Calendar_Event([
                 'summary' => 'Corte: ' . $service . ' - ' . $client_name,
                 'description' => 'Cliente: ' . $client_name . ' | Teléfono: ' . $client_phone,
                 'start' => [

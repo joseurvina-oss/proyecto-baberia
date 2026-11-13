@@ -1,44 +1,41 @@
 <?php
-// src/controllers/auth_google.php - Inicia la autenticación OAuth 2.0 con Google Calendar
-session_start();
-require_once __DIR__ . '/../config/db.php';
+// src/controllers/auth_google.php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Verificar que el barbero haya iniciado sesión
+require_once __DIR__ . '/../../vendor/autoload.php';
+
 if (!isset($_SESSION['barber_id'])) {
-    // Redirigimos a la ruta del router público, no al archivo físico
-    header("Location: /saas-barberia/public/login");
-    exit();
+    header("Location: /public/login");
+    exit;
 }
 
-// Apuntar correctamente a la carpeta config
-$jsonFile = __DIR__ . '/../config/credenciales.json';
+$client = new Google\Client();
+$client->setApplicationName('AgendaBarber SaaS');
+$client->setScopes(Google\Service\Calendar::CALENDAR_EVENTS);
+$client->setAccessType('offline');
+$client->setPrompt('select_account consent');
 
-if (!file_exists($jsonFile)) {
-    die("Error: No se encuentra el archivo credenciales.json en la ruta: " . $jsonFile);
+// Cargar credenciales desde variable de entorno (Railway) o archivo local
+$credentialsPath = __DIR__ . '/../config/credenciales.json';
+
+if (!empty(getenv('GOOGLE_CREDENTIALS_JSON'))) {
+    $credentialsConfig = json_decode(getenv('GOOGLE_CREDENTIALS_JSON'), true);
+    $client->setAuthConfig($credentialsConfig);
+} elseif (file_exists($credentialsPath)) {
+    $client->setAuthConfig($credentialsPath);
+} else {
+    die("Error: No se encontraron las credenciales de Google (ni variable GOOGLE_CREDENTIALS_JSON ni archivo local).");
 }
 
-$credentialData = json_decode(file_get_contents($jsonFile), true);
+// Construir dinámicamente la URL de callback (HTTPS en Railway)
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'];
+$redirectUri = $protocol . "://" . $host . "/public/oauth_callback";
 
-$clientId = $credentialData['web']['client_id'] ?? $credentialData['installed']['client_id'] ?? '';
+$client->setRedirectUri($redirectUri);
 
-if (empty($clientId)) {
-    die("Error: No se pudo leer el client ID del archivo JSON.");
-}
-
-// URI de redirección fija y exacta apuntando al archivo en public/
-$redirectUri = 'http://localhost/saas-barberia/public/oauth_callback.php';
-
-$scope = 'https://www.googleapis.com/auth/calendar';
-
-// Armar la URL de autorización de Google
-$authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
-    'client_id' => $clientId,
-    'redirect_uri' => $redirectUri,
-    'response_type' => 'code',
-    'scope' => $scope,
-    'access_type' => 'offline', // Necesario para obtener el refresh_token
-    'prompt' => 'consent'       // Fuerza a mostrar la pantalla de permisos
-]);
-
-header('Location: ' . $authUrl);
-exit();
+$authUrl = $client->createAuthUrl();
+header('Location: ' . filter_var($authUrl, FILTER_SANITIZE_URL));
+exit;
