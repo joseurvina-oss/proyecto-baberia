@@ -84,7 +84,7 @@ if ($stmt->execute()) {
 
             $serviceCalendar = new Google\Service\Calendar($client);
 
-            $event = new Google\Service\Calendar_Event([
+            $event = new Google\Service\Calendar\Event([
                 'summary' => 'Corte: ' . $service . ' - ' . $client_name,
                 'description' => 'Cliente: ' . $client_name . ' | Teléfono: ' . $client_phone,
                 'start' => [
