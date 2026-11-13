@@ -1,22 +1,24 @@
 <?php
+// src/config/db.php
+
 // Detectar si estamos en Railway verificando las variables de entorno
-if (getenv('MYSQLHOST')) {
+$host = getenv('MYSQLHOST') ?: getenv('MYSQL_HOST') ?: '';
+$user = getenv('MYSQLUSER') ?: getenv('MYSQL_USER') ?: '';
+$password = getenv('MYSQLPASSWORD') ?: getenv('MYSQL_ROOT_PASSWORD') ?: '';
+$dbname = getenv('MYSQLDATABASE') ?: getenv('MYSQL_DATABASE') ?: '';
+$port = getenv('MYSQLPORT') ?: getenv('MYSQL_PORT') ?: 3306;
+
+if (!empty($host)) {
     // Credenciales de la nube (Railway)
-    $host = getenv('MYSQLHOST');
-    $user = getenv('MYSQLUSER');
-    $password = getenv('MYSQLPASSWORD');
-    $dbname = getenv('MYSQLDATABASE');
-    $port = getenv('MYSQLPORT'); 
-    
-    $conn = new mysqli($host, $user, $password, $dbname, $port);
+    $conn = new mysqli($host, $user, $password, $dbname, (int)$port);
 } else {
     // Credenciales locales (AppServ)
-    $host = "localhost";
-    $user = "root";
-    $password = "12345678"; // Tu clave de AppServ (déjala vacía si no configuraste una)
-    $dbname = "saas_barberias"; // Nombre correcto de tu base de datos local
+    $host_local = "localhost";
+    $user_local = "root";
+    $password_local = "12345678"; // Tu clave de AppServ (cámbiala si configuraste otra)
+    $dbname_local = "saas_barberias"; // Nombre de tu base de datos local
     
-    $conn = new mysqli($host, $user, $password, $dbname);
+    $conn = new mysqli($host_local, $user_local, $password_local, $dbname_local);
 }
 
 // Comprobar la conexión
@@ -25,5 +27,5 @@ if ($conn->connect_error) {
 }
 
 // Configurar caracteres para evitar problemas con acentos o eñes
-$conn->set_charset("utf8");
+$conn->set_charset("utf8mb4");
 ?>
