@@ -23,12 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $stmtCheck->close();
         
+        $tenant_id = 1; // Valor requerido por la estructura multi-tenant de la tabla barbers
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
         $subscription_status = 'inactive'; 
         $plan_expires_at = NULL;
 
-        $stmtIns = $conn->prepare("INSERT INTO barbers (name, email, password, phone, subscription_status, plan_expires_at) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmtIns->bind_param("ssssss", $name, $email, $password_hash, $phone, $subscription_status, $plan_expires_at);
+        $stmtIns = $conn->prepare("INSERT INTO barbers (tenant_id, name, email, password, phone, subscription_status, plan_expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmtIns->bind_param("issssss", $tenant_id, $name, $email, $password_hash, $phone, $subscription_status, $plan_expires_at);
         
         if ($stmtIns->execute()) {
             $mensaje = "¡Registro exitoso! Tu cuenta está pendiente de activación por el administrador.";
