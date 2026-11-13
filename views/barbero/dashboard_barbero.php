@@ -1,10 +1,10 @@
 <?php
-// dashboard_barbero.php
-session_start();
-require_once 'db.php';
+// views/barbero/dashboard_barbero.php
+// (El session_start() ya lo hace public/index.php)
+require_once __DIR__ . '/../../src/config/db.php';
 
 if (!isset($_SESSION['barber_id'])) {
-    header("Location: login_barbero.php");
+    header("Location: /saas-barberia/public/login");
     exit;
 }
 
@@ -22,7 +22,7 @@ $expiraSub = $subData['plan_expires_at'];
 
 if ($estadoSub === 'inactive' || ($expiraSub && $expiraSub < $ahora)) {
     session_destroy();
-    header("Location: login_barbero.php?error=expirado");
+    header("Location: /saas-barberia/public/login?error=expirado");
     exit;
 }
 
@@ -54,10 +54,10 @@ if ($stmtCitas) {
     $citasResult = $stmtCitas->get_result();
 }
 
+// Ruta actualizada para el enlace de reservas del cliente (Pasando por el router)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
 $host = $_SERVER['HTTP_HOST'];
-$scriptPath = dirname($_SERVER['PHP_SELF']);
-$enlaceReservas = $protocol . "://" . $host . ($scriptPath == '/' ? '' : $scriptPath) . "/cliente_reserva.php?staff_id=" . $barber_id;
+$enlaceReservas = $protocol . "://" . $host . "/saas-barberia/public/reserva?staff_id=" . $barber_id;
 $isGoogleConnected = !empty($barberData['google_access_token']);
 ?>
 <!DOCTYPE html>
@@ -65,10 +65,10 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
 <head>
     <meta charset="UTF-8">
     <title>Panel de Barbero - AgendaBarber</title>
-    <!-- Logo / Favicon actualizado con tu ruta real -->
-    <link rel="icon" type="image/png" href="assets/imagenes/logo_favicon.png">
+    <!-- Rutas absolutas a los assets -->
+    <link rel="icon" type="image/png" href="/saas-barberia/public/assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/estilos.css">
+    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .dashboard-container { max-width: 900px; width: 100%; z-index: 2; margin: 30px auto; }
@@ -102,7 +102,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
         <div class="header-box">
             <div class="barber-info">
                 <?php if (!empty($barberData['profile_photo'])): ?>
-                    <img src="<?php echo htmlspecialchars($barberData['profile_photo']); ?>" alt="Foto" class="barber-avatar">
+                    <img src="/saas-barberia/<?php echo htmlspecialchars($barberData['profile_photo']); ?>" alt="Foto" class="barber-avatar">
                 <?php else: ?>
                     <div class="avatar-placeholder-small">
                         <?php echo strtoupper(substr($barberData['name'], 0, 1)); ?>
@@ -115,10 +115,12 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="editar_perfil.php" class="btn-action btn-edit">
-                    <i class="fa-solid fa-user-pen"></i> Editar Perfil, Precios y Horarios
+                <!-- Enlace editado -->
+                <a href="/saas-barberia/public/editar_perfil" class="btn-action btn-edit">
+                    <i class="fa-solid fa-user-pen"></i> Editar Perfil
                 </a>
-                <a href="logout.php" class="btn-action btn-logout">
+                <!-- Enlace de Logout actualizado al router -->
+                <a href="/saas-barberia/public/logout" class="btn-action btn-logout">
                     <i class="fa-solid fa-right-from-bracket"></i> Salir
                 </a>
             </div>
@@ -126,7 +128,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
 
         <!-- Enlace Instagram -->
         <div class="citas-card" style="padding: 20px 30px;">
-            <h3 style="font-size: 16px; color: #fff; margin-bottom: 8px;"><i class="fa-solid fa-link" style="color: #e11d48;"></i> Tu Enlace Personalizado para Instagram</h3>
+            <h3 style="font-size: 16px; color: #fff; margin-bottom: 8px;"><i class="fa-solid fa-link" style="color: #e11d48;"></i> Tu Enlace Personalizado</h3>
             <p style="font-size: 13px; color: #a1a1aa; margin-bottom: 15px;">Copia este enlace y pégalo en la biografía de tu Instagram.</p>
             
             <div class="link-box-admin">
@@ -140,14 +142,15 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
         <!-- Sincronización con Google Calendar -->
         <div class="citas-card" style="padding: 20px 30px;">
             <h3 style="font-size: 16px; color: #fff; margin-bottom: 8px;"><i class="fa-brands fa-google" style="color: #e11d48;"></i> Sincronización con Google Calendar</h3>
-            <p style="font-size: 13px; color: #a1a1aa; margin-bottom: 15px;">Conecta tu cuenta personal para que cada reserva de tus clientes se agende automáticamente en tu calendario.</p>
+            <p style="font-size: 13px; color: #a1a1aa; margin-bottom: 15px;">Conecta tu cuenta para que cada reserva de tus clientes se agende automáticamente en tu calendario.</p>
             
             <?php if ($isGoogleConnected): ?>
                 <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;">
-                    <i class="fa-solid fa-circle-check"></i> Google Calendar Conectado Exitosamente
+                    <i class="fa-solid fa-circle-check"></i> Google Calendar Conectado
                 </div>
             <?php else: ?>
-                <a href="auth_google.php" style="background: #4285F4; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; transition: all 0.2s;">
+                <!-- Enlace de Google actualizado al router -->
+                <a href="/saas-barberia/public/auth_google" style="background: #4285F4; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; transition: all 0.2s;">
                     <i class="fa-brands fa-google"></i> Conectar Google Calendar
                 </a>
             <?php endif; ?>

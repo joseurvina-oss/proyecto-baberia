@@ -1,4 +1,5 @@
 <?php
+// src/controllers/logout.php
 session_start();
 
 // Destruir todas las variables de sesión
@@ -16,7 +17,7 @@ if (ini_get("session.use_cookies")) {
 // Destruir la sesión por completo
 session_destroy();
 
-// Redirigir correctamente al login del barbero
-header("Location: login_barbero.php");
+// Redirigir correctamente al login pasando por el router público
+header("Location: /saas-barberia/public/login");
 exit();
 ?>

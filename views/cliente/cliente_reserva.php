@@ -1,6 +1,7 @@
 <?php
-// cliente_reserva.php
-require_once 'db.php';
+// views/cliente/cliente_reserva.php
+// 1. RUTA DE BASE DE DATOS ACTUALIZADA
+require_once __DIR__ . '/../../src/config/db.php';
 
 $staff_id = isset($_GET['staff_id']) ? intval($_GET['staff_id']) : 1;
 
@@ -13,7 +14,7 @@ $barber = $result->fetch_assoc();
 $stmt->close();
 
 if (!$barber) {
-    echo "<body style='background:#050507; color:#fff; font-family:sans-serif; text-align:center; padding-top:20vh;'><h2>Barbero no encontrado</h2><a href='index.php' style='color:#e11d48;'>Volver al inicio</a></body>";
+    echo "<body style='background:#050507; color:#fff; font-family:sans-serif; text-align:center; padding-top:20vh;'><h2>Barbero no encontrado</h2><a href='/saas-barberia/public/' style='color:#e11d48;'>Volver al inicio</a></body>";
     exit;
 }
 
@@ -28,7 +29,8 @@ $barber_photo = $barber['profile_photo'] ?? '';
     <title>Reservar con <?php echo htmlspecialchars($barber_name); ?> - AgendaBarber</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="assets/css/estilos.css">
+    <!-- 2. RUTA DE ESTILOS ACTUALIZADA -->
+    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
     <style>
         .profile-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e11d48; margin-bottom: 15px; box-shadow: 0 0 20px rgba(225, 29, 72, 0.4); }
         .avatar-placeholder { width: 120px; height: 120px; border-radius: 50%; background: #e11d48; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; margin-bottom: 15px; border: 3px solid #be123c; box-shadow: 0 0 20px rgba(225, 29, 72, 0.4); }
@@ -53,7 +55,8 @@ $barber_photo = $barber['profile_photo'] ?? '';
     <div id="profileSection" class="booking-section active" style="text-align: center; padding-top: 10px;">
         <div style="display: flex; flex-direction: column; align-items: center;">
             <?php if (!empty($barber_photo)): ?>
-                <img src="<?php echo htmlspecialchars($barber_photo); ?>" alt="Foto" class="profile-img">
+                <!-- 3. RUTA DE IMAGEN ACTUALIZADA -->
+                <img src="/saas-barberia/<?php echo htmlspecialchars($barber_photo); ?>" alt="Foto" class="profile-img">
             <?php else: ?>
                 <div class="avatar-placeholder">
                     <?php echo strtoupper(substr($barber_name, 0, 1)); ?>
@@ -96,9 +99,25 @@ $barber_photo = $barber['profile_photo'] ?? '';
             <div class="form-group">
                 <label for="service"><i class="fa-solid fa-list-check"></i> Servicio:</label>
                 <select id="service" required>
-                    <option value="Corte de Pelo ($8.000)">Corte de Pelo ($8.000)</option>
-                    <option value="Corte + Barba ($12.000)">Corte + Barba ($12.000)</option>
-                    <option value="Perfilado de Barba ($5.000)">Perfilado de Barba ($5.000)</option>
+                    <?php
+                    $stmtServClient = $conn->prepare("SELECT service_name, price FROM barber_services WHERE staff_id = ?");
+                    $stmtServClient->bind_param("i", $staff_id);
+                    $stmtServClient->execute();
+                    $servClientResult = $stmtServClient->get_result();
+
+                    if ($servClientResult->num_rows > 0) {
+                        echo '<option value="">Selecciona un servicio...</option>';
+                        while ($sRow = $servClientResult->fetch_assoc()) {
+                            $nombreServicio = $sRow['service_name'];
+                            $precioServicio = number_format($sRow['price'], 0, ',', '.');
+                            $valorOption = $nombreServicio . ' ($' . $precioServicio . ')';
+                            echo '<option value="' . htmlspecialchars($valorOption) . '">' . htmlspecialchars($nombreServicio) . ' ($' . $precioServicio . ')</option>';
+                        }
+                    } else {
+                        echo '<option value="">No hay servicios configurados por este barbero</option>';
+                    }
+                    $stmtServClient->close();
+                    ?>
                 </select>
             </div>
 
@@ -110,15 +129,22 @@ $barber_photo = $barber['profile_photo'] ?? '';
             <div class="form-group">
                 <label><i class="fa-regular fa-clock"></i> Horarios Disponibles:</label>
                 <div class="time-grid" id="timeGrid">
-                    <button type="button" class="time-btn" data-time="10:00">10:00</button>
-                    <button type="button" class="time-btn" data-time="10:45">10:45</button>
-                    <button type="button" class="time-btn" data-time="11:30">11:30</button>
-                    <button type="button" class="time-btn" data-time="12:15">12:15</button>
-                    <button type="button" class="time-btn" data-time="15:00">15:00</button>
-                    <button type="button" class="time-btn" data-time="15:45">15:45</button>
-                    <button type="button" class="time-btn" data-time="16:30">16:30</button>
-                    <button type="button" class="time-btn" data-time="17:15">17:15</button>
-                    <button type="button" class="time-btn" data-time="18:00">18:00</button>
+                    <?php
+                    $stmtHours = $conn->prepare("SELECT available_time FROM barber_hours WHERE staff_id = ? ORDER BY available_time ASC");
+                    $stmtHours->bind_param("i", $staff_id);
+                    $stmtHours->execute();
+                    $hoursResult = $stmtHours->get_result();
+
+                    if ($hoursResult->num_rows > 0) {
+                        while ($hRow = $hoursResult->fetch_assoc()) {
+                            $timeFormatted = date('H:i', strtotime($hRow['available_time']));
+                            echo '<button type="button" class="time-btn" data-time="' . $timeFormatted . '">' . $timeFormatted . '</button>';
+                        }
+                    } else {
+                        echo '<p style="color: #a1a1aa; font-size: 13px; grid-column: span 3;">No hay horarios configurados por el barbero.</p>';
+                    }
+                    $stmtHours->close();
+                    ?>
                 </div>
                 <input type="hidden" id="selectedTime" required>
             </div>
@@ -167,7 +193,7 @@ $barber_photo = $barber['profile_photo'] ?? '';
             btn.innerHTML = btn.getAttribute('data-time');
         });
 
-        fetch(`api_get_booked_times.php?staff_id=${staffId}&date=${dateVal}`)
+        fetch(`/saas-barberia/public/api_get_booked_times.php?staff_id=${staffId}&date=${dateVal}`)
             .then(res => res.json())
             .then(data => {
                 if (data.booked_times) {
@@ -218,7 +244,8 @@ $barber_photo = $barber['profile_photo'] ?? '';
             time: hiddenTimeInput.value
         };
 
-        fetch('api_booking.php', {
+        // LLAMADA CORREGIDA A LA API
+        fetch('/saas-barberia/public/api_booking.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -244,12 +271,6 @@ $barber_photo = $barber['profile_photo'] ?? '';
     });
 </script>
 
-<!-- Enlace movido correctamente fuera del script -->
-<div style="text-align: center; margin-top: 20px; padding-bottom: 30px;">
-    <a href="login_barbero.php" style="color: #e11d48; text-decoration: none; font-weight: 600;">
-        <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión como Barbero
-    </a>
-</div>
 
 </body>
 </html>

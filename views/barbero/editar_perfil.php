@@ -1,10 +1,9 @@
 <?php
-// editar_perfil.php
-session_start();
-require_once 'db.php';
+// views/barbero/editar_perfil.php
+require_once __DIR__ . '/../../src/config/db.php';
 
 if (!isset($_SESSION['barber_id'])) {
-    header("Location: login_barbero.php");
+    header("Location: /saas-barberia/public/login");
     exit;
 }
 
@@ -14,7 +13,7 @@ $tipoMensaje = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // 1. Actualizar perfil personal
+    // 1. Actualizar perfil personal y foto
     if (isset($_POST['update_profile'])) {
         $name = trim($_POST['name']);
         $phone = trim($_POST['phone']);
@@ -29,11 +28,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
             $allowed = ['jpg', 'jpeg', 'png', 'webp'];
             if (in_array(strtolower($ext), $allowed)) {
-                $dir = 'uploads/';
-                if (!is_dir($dir)) mkdir($dir, 0777, true);
-                $filename = $dir . 'barber_' . $barber_id . '_' . time() . '.' . $ext;
-                if (move_uploaded_file($_FILES['photo']['tmp_name'], $filename)) {
-                    $profile_photo = $filename;
+                $dir = __DIR__ . '/../../public/uploads/';
+
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0777, true);
+                }
+
+                $nombre_archivo_limpio = 'barber_' . $barber_id . '_' . time() . '.' . $ext;
+                $rutaFisica = $dir . $nombre_archivo_limpio;
+
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $rutaFisica)) {
+                    $profile_photo = 'public/uploads/' . $nombre_archivo_limpio;
                 }
             }
         }
@@ -48,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updateStmt->close();
     }
 
-    // 2. Añadir servicio
+    // 2. Añadir servicio (Directo a la tabla barber_services)
     if (isset($_POST['add_service'])) {
         $service_name = trim($_POST['service_name']);
         $price = intval($_POST['price']);
@@ -56,10 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($service_name) && $price > 0) {
             $stmtServ = $conn->prepare("INSERT INTO barber_services (staff_id, service_name, price) VALUES (?, ?, ?)");
             $stmtServ->bind_param("isi", $barber_id, $service_name, $price);
-            $stmtServ->execute();
+            if ($stmtServ->execute()) {
+                $mensaje = "¡Servicio añadido con éxito!";
+                $tipoMensaje = "success";
+            }
             $stmtServ->close();
-            $mensaje = "¡Servicio añadido!";
-            $tipoMensaje = "success";
         }
     }
 
@@ -99,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Consultas para la vista
 $stmt = $conn->prepare("SELECT name, phone, profile_photo FROM barbers WHERE id = ?");
 $stmt->bind_param("i", $barber_id);
 $stmt->execute();
@@ -123,7 +130,7 @@ $stmtHorarios->close();
     <meta charset="UTF-8">
     <title>Configurar Perfil, Precios y Horarios - AgendaBarber</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/estilos.css">
+    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .edit-container { max-width: 650px; margin: 30px auto; z-index: 2; position: relative; }
@@ -138,13 +145,13 @@ $stmtHorarios->close();
 <div class="edit-container">
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
         <h2 style="font-size: 22px; margin: 0;"><i class="fa-solid fa-sliders" style="color: #e11d48;"></i> Configurar <span>Perfil, Precios y Horarios</span></h2>
-        <a href="dashboard_barbero.php" style="color: #a1a1aa; text-decoration: none; font-size: 13px;"><i class="fa-solid fa-arrow-left"></i> Volver al Panel</a>
+        <a href="/saas-barberia/public/dashboard" style="color: #a1a1aa; text-decoration: none; font-size: 13px;"><i class="fa-solid fa-arrow-left"></i> Volver al Panel</a>
     </div>
 
     <!-- 1. Datos Personales -->
     <div class="card-box">
         <h3 style="font-size: 16px; color: #fff; margin-bottom: 15px;"><i class="fa-solid fa-user-pen" style="color: #e11d48;"></i> Información Personal</h3>
-        <form action="editar_perfil.php" method="POST" enctype="multipart/form-data">
+        <form action="/saas-barberia/public/editar_perfil" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="update_profile" value="1">
             
             <div class="form-group">
@@ -179,7 +186,7 @@ $stmtHorarios->close();
                             <strong style="color: #fff;"><?php echo htmlspecialchars($serv['service_name']); ?></strong>
                             <span style="color: #22c55e; margin-left: 10px; font-weight: 600;">$<?php echo number_format($serv['price'], 0, ',', '.'); ?></span>
                         </div>
-                        <form action="editar_perfil.php" method="POST" style="margin: 0;">
+                        <form action="/saas-barberia/public/editar_perfil" method="POST" style="margin: 0;">
                             <input type="hidden" name="delete_service_id" value="<?php echo $serv['id']; ?>">
                             <button type="submit" class="btn-delete"><i class="fa-solid fa-trash"></i></button>
                         </form>
@@ -190,7 +197,7 @@ $stmtHorarios->close();
             <?php endif; ?>
         </div>
 
-        <form action="editar_perfil.php" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <form action="/saas-barberia/public/editar_perfil" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
             <input type="hidden" name="add_service" value="1">
             <div style="flex: 2; min-width: 150px;" class="form-group"><input type="text" name="service_name" placeholder="Ej: Corte + Barba" required style="margin: 0;"></div>
             <div style="flex: 1; min-width: 100px;" class="form-group"><input type="number" name="price" placeholder="Precio ($)" required style="margin: 0;"></div>
@@ -209,7 +216,7 @@ $stmtHorarios->close();
                     <?php while($hor = $horariosList->fetch_assoc()): ?>
                         <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 14px; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px;">
                             <span><i class="fa-regular fa-clock" style="color: #e11d48;"></i> <?php echo htmlspecialchars($hor['available_time']); ?></span>
-                            <form action="editar_perfil.php" method="POST" style="margin: 0;">
+                            <form action="/saas-barberia/public/editar_perfil" method="POST" style="margin: 0;">
                                 <input type="hidden" name="delete_hour_id" value="<?php echo $hor['id']; ?>">
                                 <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 12px;"><i class="fa-solid xmark fa-x"></i></button>
                             </form>
@@ -221,7 +228,7 @@ $stmtHorarios->close();
             <?php endif; ?>
         </div>
 
-        <form action="editar_perfil.php" method="POST" style="display: flex; gap: 10px;">
+        <form action="/saas-barberia/public/editar_perfil" method="POST" style="display: flex; gap: 10px;">
             <input type="hidden" name="add_hour" value="1">
             <div style="flex: 2;" class="form-group"><input type="time" name="available_time" required style="margin: 0;"></div>
             <button type="submit" class="btn-submit" style="flex: 1; margin: 0; height: 48px;"><i class="fa-solid fa-plus"></i> Agregar Hora</button>

@@ -1,8 +1,8 @@
 <?php
-require_once 'db.php';
+// src/config/tenant_config.php
+require_once __DIR__ . '/db.php';
 
-// Obtener el slug de la barbería desde la URL (ej: index.php?negocio=barberia-style)
-// Si no se envía nada, por defecto usaremos el ID 1 (Barbería Style)
+// Obtener el slug de la barbería desde la URL
 $slug = isset($_GET['negocio']) ? $conn->real_escape_string($_GET['negocio']) : 'barberia-style';
 
 $sql = "SELECT * FROM tenants WHERE slug = '$slug' LIMIT 1";
@@ -11,7 +11,6 @@ $result = $conn->query($sql);
 if ($result->num_rows > 0) {
     $tenant = $result->fetch_assoc();
 } else {
-    // Si no existe, cargamos por defecto el primer tenant para evitar errores
     $sql_default = "SELECT * FROM tenants WHERE id = 1 LIMIT 1";
     $tenant = $conn->query($sql_default)->fetch_assoc();
 }

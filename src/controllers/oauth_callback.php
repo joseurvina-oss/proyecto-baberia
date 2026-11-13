@@ -1,21 +1,24 @@
 <?php
-// oauth_callback.php - Procesa el código de Google y guarda los tokens en la BD
+// src/controllers/oauth_callback.php - Procesa el código de Google y guarda los tokens en la BD
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 session_start();
-require_once 'db.php';
-require_once 'vendor/autoload.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../../vendor/autoload.php'; // RUTA ACTUALIZADA (Sube 2 niveles hasta la raíz)
 
 // Verificar que el barbero esté logueado
 if (!isset($_SESSION['barber_id'])) {
-    header("Location: login_barbero.php");
+    header("Location: /saas-barberia/public/login"); // RUTA ACTUALIZADA AL ROUTER
     exit();
 }
 
 $client = new Google_Client();
-$client->setAuthConfig('credenciales.json');
-$client->setRedirectUri('http://localhost/saas-barberia/oauth_callback.php');
+$client->setAuthConfig(__DIR__ . '/../config/credenciales.json'); // RUTA ACTUALIZADA
+
+// CORREGIDO: Añadimos la extensión .php para que coincida exactamente con la redirección
+$client->setRedirectUri('http://localhost/saas-barberia/public/oauth_callback.php'); 
+
 $client->addScope(Google_Service_Calendar::CALENDAR);
 $client->setAccessType('offline');
 $client->setPrompt('select_account consent');
@@ -49,8 +52,8 @@ if (isset($_GET['code'])) {
         }
         
         if ($stmt->execute()) {
-            // Redirige al panel del barbero con un aviso de éxito opcional
-            header("Location: dashboard_barbero.php?google=success");
+            // Redirige al panel del barbero con un aviso de éxito opcional (RUTA ACTUALIZADA)
+            header("Location: /saas-barberia/public/dashboard?google=success");
             exit();
         } else {
             echo "Error al guardar el token en la base de datos: " . $stmt->error;

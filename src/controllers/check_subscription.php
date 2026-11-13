@@ -1,6 +1,6 @@
 <?php
 // check_subscription.php
-require_once 'db.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (isset($_SESSION['barber_id'])) {
     $barber_id = $_SESSION['barber_id'];
