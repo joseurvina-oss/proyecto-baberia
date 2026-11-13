@@ -5,17 +5,22 @@ session_start();
 // 1. Obtener la ruta solicitada de forma limpia
 $request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// 2. Limpiar la subcarpeta local de AppServ para que funcione igual en tu PC y en la nube
+// 2. Limpiar las subcarpetas locales y de despliegue
 $request = str_replace('/saas-barberia/public', '', $request);
+$request = str_replace('/public', '', $request);
 
-// 3. Si la ruta queda vacía, la forzamos a la página principal '/'
+// 3. Eliminar la barra final si existe para evitar conflictos
+$request = rtrim($request, '/');
+
+// 4. Si la ruta queda vacía, la forzamos a la página principal '/'
 if ($request === '' || $request === '/index.php') {
     $request = '/';
 }
 
-// 4. Router principal (El "Portero" de tu aplicación)
+// 5. Router principal de la aplicación
 switch ($request) {
     // ---- VISTAS PÚBLICAS Y CLIENTES ----
+    case '':
     case '/':
         require __DIR__ . '/../views/cliente/index.php';
         break;
@@ -42,7 +47,7 @@ switch ($request) {
         require __DIR__ . '/../views/administracion/admin_barberos.php';
         break;
 
-    // ---- CONTROLADORES Y ACCIONES (No tienen vista, solo ejecutan código) ----
+    // ---- CONTROLADORES Y ACCIONES ----
     case '/logout':
         require __DIR__ . '/../src/controllers/logout.php';
         break;
@@ -56,7 +61,6 @@ switch ($request) {
         break;
 
     case '/editar_perfil':
-            // Cambia la ruta para que apunte al archivo correcto que acabamos de hacer
         require __DIR__ . '/../views/barbero/editar_perfil.php';
         break;
 
