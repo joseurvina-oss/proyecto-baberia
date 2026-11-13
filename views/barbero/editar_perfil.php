@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $rutaFisica = $dir . $nombre_archivo_limpio;
 
                 if (move_uploaded_file($_FILES['photo']['tmp_name'], $rutaFisica)) {
-                    $profile_photo = 'public/uploads/' . $nombre_archivo_limpio;
+                    $profile_photo = $nombre_archivo_limpio;
                 }
             }
         }
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updateStmt->close();
     }
 
-    // 2. Añadir servicio (Directo a la tabla barber_services)
+    // 2. Añadir servicio
     if (isset($_POST['add_service'])) {
         $service_name = trim($_POST['service_name']);
         $price = intval($_POST['price']);
@@ -186,7 +186,7 @@ $stmtHorarios->close();
                             <strong style="color: #fff;"><?php echo htmlspecialchars($serv['service_name']); ?></strong>
                             <span style="color: #22c55e; margin-left: 10px; font-weight: 600;">$<?php echo number_format($serv['price'], 0, ',', '.'); ?></span>
                         </div>
-                        <form action="/saas-barberia/public/editar_perfil" method="POST" style="margin: 0;">
+                        <form action="/public/editar_perfil" method="POST" style="margin: 0;">
                             <input type="hidden" name="delete_service_id" value="<?php echo $serv['id']; ?>">
                             <button type="submit" class="btn-delete"><i class="fa-solid fa-trash"></i></button>
                         </form>
@@ -197,7 +197,7 @@ $stmtHorarios->close();
             <?php endif; ?>
         </div>
 
-        <form action="/saas-barberia/public/editar_perfil" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <form action="/public/editar_perfil" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap;">
             <input type="hidden" name="add_service" value="1">
             <div style="flex: 2; min-width: 150px;" class="form-group"><input type="text" name="service_name" placeholder="Ej: Corte + Barba" required style="margin: 0;"></div>
             <div style="flex: 1; min-width: 100px;" class="form-group"><input type="number" name="price" placeholder="Precio ($)" required style="margin: 0;"></div>
@@ -216,9 +216,9 @@ $stmtHorarios->close();
                     <?php while($hor = $horariosList->fetch_assoc()): ?>
                         <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 14px; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px;">
                             <span><i class="fa-regular fa-clock" style="color: #e11d48;"></i> <?php echo htmlspecialchars($hor['available_time']); ?></span>
-                            <form action="/saas-barberia/public/editar_perfil" method="POST" style="margin: 0;">
+                            <form action="/public/editar_perfil" method="POST" style="margin: 0;">
                                 <input type="hidden" name="delete_hour_id" value="<?php echo $hor['id']; ?>">
-                                <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 12px;"><i class="fa-solid xmark fa-x"></i></button>
+                                <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 12px;"><i class="fa-solid fa-xmark"></i></button>
                             </form>
                         </div>
                     <?php endwhile; ?>

@@ -1,8 +1,5 @@
 <?php
 // views/administracion/admin_barberos.php
-// (El session_start() ya lo maneja public/index.php)
-
-// 1. RUTA DE BASE DE DATOS ACTUALIZADA
 require_once __DIR__ . '/../../src/config/db.php';
 
 $mensaje = "";
@@ -47,10 +44,9 @@ $result = $conn->query("SELECT id, name, email, phone, subscription_status, plan
 <head>
     <meta charset="UTF-8">
     <title>Panel de Administración - Control de Suscripciones</title>
-    <!-- 2. RUTA DE ASSETS Y FAVICON ACTUALIZADA -->
-    <link rel="icon" type="image/png" href="/saas-barberia/public/assets/imagenes/logo_favicon.png">
+    <link rel="icon" type="image/png" href="/public/assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
+    <link rel="stylesheet" href="/public/assets/css/estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #09090b; color: #f4f4f5; font-family: sans-serif; padding: 20px; }
@@ -77,8 +73,7 @@ $result = $conn->query("SELECT id, name, email, phone, subscription_status, plan
                 <h2 style="margin: 0; font-size: 22px;"><i class="fa-solid fa-users-gear" style="color: #e11d48;"></i> Panel de Control - Suscripciones</h2>
                 <p style="margin: 5px 0 0 0; color: #a1a1aa; font-size: 13px;">Gestiona manualmente el acceso y los meses de prueba de los barberos en tu plataforma.</p>
             </div>
-            <!-- 3. ENLACE ACTUALIZADO AL ROUTER -->
-            <a href="/saas-barberia/public/login" style="color: #a1a1aa; text-decoration: none; font-size: 13px;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Ir al Login</a>
+            <a href="/public/login" style="color: #a1a1aa; text-decoration: none; font-size: 13px;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Ir al Login</a>
         </div>
 
         <table>
@@ -142,8 +137,7 @@ $result = $conn->query("SELECT id, name, email, phone, subscription_status, plan
             color: '#fff',
             confirmButtonColor: '#e11d48'
         }).then(() => {
-            // Redirección JavaScript actualizada al router
-            window.location.href = '/saas-barberia/public/admin/barberos';
+            window.location.href = '/public/admin/barberos';
         });
     </script>
     <?php endif; ?>

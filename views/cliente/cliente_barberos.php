@@ -1,5 +1,7 @@
 <?php
-require_once __DIR__ . '/../config/db.php';
+// views/cliente/cliente_barbero.php
+require_once __DIR__ . '/../../src/config/db.php';
+
 $query = "SELECT * FROM barbers ORDER BY id ASC";
 $result = $conn->query($query);
 ?>
@@ -9,7 +11,7 @@ $result = $conn->query($query);
     <meta charset="UTF-8">
     <title>Nuestros Barberos - AgendaBarber</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
+    <link rel="stylesheet" href="/public/assets/css/estilos.css">
     <style>
         .grid-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 25px; max-width: 1100px; width: 100%; z-index: 2; margin-top: 20px; }
         .barber-card { width: 320px; display: flex; flex-direction: column; align-items: center; text-align: center; }
@@ -29,7 +31,8 @@ $result = $conn->query($query);
         <?php while($barber = $result->fetch_assoc()): ?>
             <div class="barber-card">
                 <?php if (!empty($barber['profile_photo'])): ?>
-                    <img src="<?php echo htmlspecialchars($barber['profile_photo']); ?>" alt="Foto" class="profile-img">
+                    <?php $nombreFoto = basename($barber['profile_photo']); ?>
+                    <img src="/public/uploads/<?php echo htmlspecialchars($nombreFoto); ?>" alt="Foto" class="profile-img">
                 <?php else: ?>
                     <div class="avatar-placeholder">
                         <?php echo strtoupper(substr($barber['name'], 0, 1)); ?>
@@ -46,14 +49,14 @@ $result = $conn->query($query);
                     </a>
                 <?php endif; ?>
 
-                <a href="cliente_reserva.php?staff_id=<?php echo $barber['id']; ?>" class="btn-primary">
+                <a href="/public/reservar?staff_id=<?php echo $barber['id']; ?>" class="btn-primary">
                     📅 Reservar con <?php echo htmlspecialchars($barber['name']); ?>
                 </a>
             </div>
         <?php endwhile; ?>
     </div>
 
-    <a href="index.php" class="back-link" style="margin-top: 40px;"><i class="fa-solid fa-arrow-left"></i> Volver al inicio</a>
+    <a href="/public/" class="back-link" style="margin-top: 40px;"><i class="fa-solid fa-arrow-left"></i> Volver al inicio</a>
 
 </body>
 </html>

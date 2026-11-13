@@ -25,7 +25,12 @@ switch ($request) {
         require __DIR__ . '/../views/cliente/index.php';
         break;
 
+    case '/barberos':
+        require __DIR__ . '/../views/cliente/cliente_barbero.php';
+        break;
+
     case '/reserva':
+    case '/reservar': // Soporta ambas variantes para evitar errores 404
         require __DIR__ . '/../views/cliente/cliente_reserva.php';
         break;
 

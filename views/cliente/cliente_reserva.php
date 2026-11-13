@@ -14,7 +14,7 @@ $barber = $result->fetch_assoc();
 $stmt->close();
 
 if (!$barber) {
-    echo "<body style='background:#050507; color:#fff; font-family:sans-serif; text-align:center; padding-top:20vh;'><h2>Barbero no encontrado</h2><a href='/saas-barberia/public/' style='color:#e11d48;'>Volver al inicio</a></body>";
+    echo "<body style='background:#050507; color:#fff; font-family:sans-serif; text-align:center; padding-top:20vh;'><h2>Barbero no encontrado</h2><a href='/public/' style='color:#e11d48;'>Volver al inicio</a></body>";
     exit;
 }
 
@@ -29,8 +29,7 @@ $barber_photo = $barber['profile_photo'] ?? '';
     <title>Reservar con <?php echo htmlspecialchars($barber_name); ?> - AgendaBarber</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- 2. RUTA DE ESTILOS ACTUALIZADA -->
-    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
+    <link rel="stylesheet" href="/public/assets/css/estilos.css">
     <style>
         .profile-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e11d48; margin-bottom: 15px; box-shadow: 0 0 20px rgba(225, 29, 72, 0.4); }
         .avatar-placeholder { width: 120px; height: 120px; border-radius: 50%; background: #e11d48; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; margin-bottom: 15px; border: 3px solid #be123c; box-shadow: 0 0 20px rgba(225, 29, 72, 0.4); }
@@ -55,8 +54,9 @@ $barber_photo = $barber['profile_photo'] ?? '';
     <div id="profileSection" class="booking-section active" style="text-align: center; padding-top: 10px;">
         <div style="display: flex; flex-direction: column; align-items: center;">
             <?php if (!empty($barber_photo)): ?>
-                <!-- 3. RUTA DE IMAGEN ACTUALIZADA -->
-                <img src="/saas-barberia/<?php echo htmlspecialchars($barber_photo); ?>" alt="Foto" class="profile-img">
+                <!-- 3. RUTA DE IMAGEN ACTUALIZADA CON BASENAME -->
+                <?php $nombreFoto = basename($barber_photo); ?>
+                <img src="/public/uploads/<?php echo htmlspecialchars($nombreFoto); ?>" alt="Foto" class="profile-img">
             <?php else: ?>
                 <div class="avatar-placeholder">
                     <?php echo strtoupper(substr($barber_name, 0, 1)); ?>
@@ -193,7 +193,8 @@ $barber_photo = $barber['profile_photo'] ?? '';
             btn.innerHTML = btn.getAttribute('data-time');
         });
 
-        fetch(`/saas-barberia/public/api_get_booked_times.php?staff_id=${staffId}&date=${dateVal}`)
+        // 4. RUTA API HORARIOS CORREGIDA
+        fetch(`/public/api_get_booked_times.php?staff_id=${staffId}&date=${dateVal}`)
             .then(res => res.json())
             .then(data => {
                 if (data.booked_times) {
@@ -244,8 +245,8 @@ $barber_photo = $barber['profile_photo'] ?? '';
             time: hiddenTimeInput.value
         };
 
-        // LLAMADA CORREGIDA A LA API
-        fetch('/saas-barberia/public/api_booking.php', {
+        // 5. RUTA API RESERVA CORREGIDA
+        fetch('/public/api_booking.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -270,7 +271,6 @@ $barber_photo = $barber['profile_photo'] ?? '';
         });
     });
 </script>
-
 
 </body>
 </html>

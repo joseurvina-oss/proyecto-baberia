@@ -1,8 +1,5 @@
 <?php
 // views/autenticacion/registro.php
-// IMPORTANTE: Ya no necesitamos session_start() aquí porque public/index.php ya lo inicia.
-
-// 1. RUTA DE BASE DE DATOS ACTUALIZADA
 require_once __DIR__ . '/../../src/config/db.php';
 
 $mensaje = "";
@@ -49,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Registro de Barbero - AgendaBarber</title>
-    <!-- 2. RUTAS DE ASSETS ACTUALIZADAS -->
     <link rel="icon" type="image/png" href="/public/assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/public/assets/css/estilos.css">
@@ -59,15 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="booking-card" style="max-width: 420px; margin: 6vh auto;">
         <div style="text-align: center; margin-bottom: 20px;">
-        <div style="margin-bottom: 12px;">
-        <!-- 3. RUTA DEL LOGO ACTUALIZADA -->
-        <img src="/public/assets/imagenes/logo.png" alt="Logo" style="width: 75px; height: 75px; object-fit: cover; border-radius: 50%; border: 2px solid #e11d48; box-shadow: 0 4px 15px rgba(225,29,72,0.4);">
-    </div>
+            <div style="margin-bottom: 12px;">
+                <img src="/public/assets/imagenes/logo.png" alt="Logo" style="width: 75px; height: 75px; object-fit: cover; border-radius: 50%; border: 2px solid #e11d48; box-shadow: 0 4px 15px rgba(225,29,72,0.4);">
+            </div>
             <h2 style="font-size: 24px; margin-bottom: 5px;">Crear Cuenta de <span>Barbero</span></h2>
             <p style="font-size: 13px; color: #a1a1aa;">Únete a AgendaBarber y obtén tu propio sistema de reservas.</p>
         </div>
 
-        <!-- 4. ACTION DEL FORMULARIO ACTUALIZADO AL ROUTER -->
         <form action="/public/registro" method="POST">
             <div class="form-group">
                 <label for="name"><i class="fa-solid fa-user"></i> Tu Nombre o Alias:</label>
@@ -95,8 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <div style="text-align: center; margin-top: 20px;">
-            <!-- 5. ENLACE DE LOGIN ACTUALIZADO -->
-            <a href="/saas-barberia/public/login" style="color: #a1a1aa; text-decoration: none; font-size: 13px;">
+            <a href="/public/login" style="color: #a1a1aa; text-decoration: none; font-size: 13px;">
                 ¿Ya tienes una cuenta? <span style="color: #e11d48; font-weight: 600;">Inicia Sesión</span>
             </a>
         </div>
@@ -112,8 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             confirmButtonColor: '#e11d48'
         }).then(() => {
             <?php if ($tipoMensaje === 'success'): ?>
-            // 6. REDIRECCIÓN JAVASCRIPT ACTUALIZADA AL ROUTER
-            window.location.href = '/saas-barberia/public/login';
+            window.location.href = '/public/login';
             <?php endif; ?>
         });
     </script>

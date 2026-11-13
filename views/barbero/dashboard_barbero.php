@@ -1,10 +1,9 @@
 <?php
 // views/barbero/dashboard_barbero.php
-// (El session_start() ya lo hace public/index.php)
 require_once __DIR__ . '/../../src/config/db.php';
 
 if (!isset($_SESSION['barber_id'])) {
-    header("Location: /saas-barberia/public/login");
+    header("Location: /public/login");
     exit;
 }
 
@@ -22,7 +21,7 @@ $expiraSub = $subData['plan_expires_at'];
 
 if ($estadoSub === 'inactive' || ($expiraSub && $expiraSub < $ahora)) {
     session_destroy();
-    header("Location: /saas-barberia/public/login?error=expirado");
+    header("Location: /public/login?error=expirado");
     exit;
 }
 
@@ -35,29 +34,24 @@ $barberData = [
     'google_access_token' => ''
 ];
 
-$stmtBarber = $conn->prepare("SELECT * FROM barbers WHERE id = ?");
-if ($stmtBarber) {
-    $stmtBarber->bind_param("i", $barber_id);
-    $stmtBarber->execute();
-    $resBarber = $stmtBarber->get_result();
-    if ($row = $resBarber->fetch_assoc()) {
-        $barberData = array_merge($barberData, $row);
+$stmtBarber =$conn->prepare("SELECT * FROM barbers WHERE id = ?");
+if ($stmtBarber) {$stmtBarber->bind_param("i", $barber_id);$stmtBarber->execute();
+    $resBarber =$stmtBarber->get_result();
+    if ($row = $resBarber->fetch_assoc()) {$barberData = array_merge($barberData,$row);
     }
     $stmtBarber->close();
 }
 
 $citasResult = null;
-$stmtCitas = $conn->prepare("SELECT * FROM bookings WHERE staff_id = ? ORDER BY appointment_date DESC, appointment_time DESC");
-if ($stmtCitas) {
-    $stmtCitas->bind_param("i", $barber_id);
-    $stmtCitas->execute();
-    $citasResult = $stmtCitas->get_result();
+$stmtCitas =$conn->prepare("SELECT * FROM bookings WHERE staff_id = ? ORDER BY appointment_date DESC, appointment_time DESC");
+if ($stmtCitas) {$stmtCitas->bind_param("i", $barber_id);$stmtCitas->execute();
+    $citasResult =$stmtCitas->get_result();
 }
 
-// Ruta actualizada para el enlace de reservas del cliente (Pasando por el router)
-$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$host = $_SERVER['HTTP_HOST'];
-$enlaceReservas = $protocol . "://" . $host . "/saas-barberia/public/reserva?staff_id=" . $barber_id;
+// Ruta dinámica limpia para Railway
+$protocol = (isset($_SERVER['HTTPS']) &&$_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) &&$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? "https" : "http";
+$host =$_SERVER['HTTP_HOST'];
+$enlaceReservas =$protocol . "://" . $host . "/public/reserva?staff_id=" . $barber_id;
 $isGoogleConnected = !empty($barberData['google_access_token']);
 ?>
 <!DOCTYPE html>
@@ -65,7 +59,6 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
 <head>
     <meta charset="UTF-8">
     <title>Panel de Barbero - AgendaBarber</title>
-    <!-- Rutas absolutas a los assets -->
     <link rel="icon" type="image/png" href="/public/assets/imagenes/logo_favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/public/assets/css/estilos.css">
@@ -99,11 +92,9 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
 
     <div class="dashboard-container">
         <!-- Cabecera -->
-<!-- Cabecera -->
-<div class="header-box">
+        <div class="header-box">
             <div class="barber-info">
                 <?php if (!empty($barberData['profile_photo'])): ?>
-                    <!-- Fix: Extraemos solo el nombre de la foto para evitar rutas duplicadas -->
                     <?php $nombreFoto = basename($barberData['profile_photo']); ?>
                     <img src="/public/uploads/<?php echo htmlspecialchars($nombreFoto); ?>" alt="Foto" class="barber-avatar">
                 <?php else: ?>
@@ -118,11 +109,9 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <!-- Fix: Enlace editado para Railway (se eliminó /saas-barberia/) -->
                 <a href="/public/editar_perfil" class="btn-action btn-edit">
                     <i class="fa-solid fa-user-pen"></i> Editar Perfil
                 </a>
-                <!-- Enlace de Logout actualizado -->
                 <a href="/public/logout" class="btn-action btn-logout">
                     <i class="fa-solid fa-right-from-bracket"></i> Salir
                 </a>
@@ -152,8 +141,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
                     <i class="fa-solid fa-circle-check"></i> Google Calendar Conectado
                 </div>
             <?php else: ?>
-                <!-- Enlace de Google actualizado al router -->
-                <a href="/saas-barberia/public/auth_google" style="background: #4285F4; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; transition: all 0.2s;">
+                <a href="/public/auth_google" style="background: #4285F4; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; transition: all 0.2s;">
                     <i class="fa-brands fa-google"></i> Conectar Google Calendar
                 </a>
             <?php endif; ?>
@@ -164,7 +152,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
             <h2 style="text-align: left; font-size: 20px; margin-bottom: 5px;"><i class="fa-solid fa-calendar-days" style="color: #e11d48;"></i> Tus Citas <span>Agendadas</span></h2>
             <p style="margin-bottom: 20px;">Historial y reservas asignadas exclusivamente a tu agenda</p>
 
-            <?php if ($citasResult && $citasResult->num_rows > 0): ?>
+            <?php if ($citasResult &&$citasResult->num_rows > 0): ?>
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
@@ -178,13 +166,13 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while($cita = $citasResult->fetch_assoc()): ?>
+                            <?php while($cita =$citasResult->fetch_assoc()): ?>
                                 <tr>
                                     <td><strong><?php echo htmlspecialchars($cita['client_name']); ?></strong></td>
                                     <td>
                                         <?php 
-                                            $phoneVal = $cita['client_phone'];
-                                            $cleanPhone = preg_replace('/[^0-9]/', '', $phoneVal);
+                                            $phoneVal =$cita['client_phone'];
+                                            $cleanPhone = preg_replace('/[^0-9]/', '',$phoneVal);
                                         ?>
                                         <a href="https://wa.me/<?php echo $cleanPhone; ?>" target="_blank" style="color: #22c55e; text-decoration: none; font-weight: 600;">
                                             <i class="fa-brands fa-whatsapp"></i> <?php echo htmlspecialchars($phoneVal); ?>
@@ -225,7 +213,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
     }
 </script>
 
-<?php if (isset($_GET['google']) && $_GET['google'] === 'success'): ?>
+<?php if (isset($_GET['google']) &&$_GET['google'] === 'success'): ?>
 <script>
     Swal.fire({
         title: '¡Google Calendar Conectado!',
@@ -241,6 +229,5 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
 </body>
 </html>
 <?php 
-if (isset($stmtCitas)) $stmtCitas->close();
-$conn->close(); 
+if (isset($stmtCitas)) $stmtCitas->close();$conn->close(); 
 ?>
