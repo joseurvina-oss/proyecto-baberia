@@ -102,7 +102,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
         <div class="header-box">
             <div class="barber-info">
                 <?php if (!empty($barberData['profile_photo'])): ?>
-                    <img src="/saas-barberia/<?php echo htmlspecialchars($barberData['profile_photo']); ?>" alt="Foto" class="barber-avatar">
+                    <img src="/public/<?php echo htmlspecialchars($barberData['profile_photo']); ?>" alt="Foto" class="barber-avatar">
                 <?php else: ?>
                     <div class="avatar-placeholder-small">
                         <?php echo strtoupper(substr($barberData['name'], 0, 1)); ?>

@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../../src/config/db.php';
 
 if (!isset($_SESSION['barber_id'])) {
-    header("Location: /saas-barberia/public/login");
+    header("Location: /public/login");
     exit;
 }
 
@@ -130,7 +130,7 @@ $stmtHorarios->close();
     <meta charset="UTF-8">
     <title>Configurar Perfil, Precios y Horarios - AgendaBarber</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/saas-barberia/public/assets/css/estilos.css">
+    <link rel="stylesheet" href="/public/assets/css/estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .edit-container { max-width: 650px; margin: 30px auto; z-index: 2; position: relative; }
@@ -145,13 +145,13 @@ $stmtHorarios->close();
 <div class="edit-container">
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
         <h2 style="font-size: 22px; margin: 0;"><i class="fa-solid fa-sliders" style="color: #e11d48;"></i> Configurar <span>Perfil, Precios y Horarios</span></h2>
-        <a href="/saas-barberia/public/dashboard" style="color: #a1a1aa; text-decoration: none; font-size: 13px;"><i class="fa-solid fa-arrow-left"></i> Volver al Panel</a>
+        <a href="/public/dashboard" style="color: #a1a1aa; text-decoration: none; font-size: 13px;"><i class="fa-solid fa-arrow-left"></i> Volver al Panel</a>
     </div>
 
     <!-- 1. Datos Personales -->
     <div class="card-box">
         <h3 style="font-size: 16px; color: #fff; margin-bottom: 15px;"><i class="fa-solid fa-user-pen" style="color: #e11d48;"></i> Información Personal</h3>
-        <form action="/saas-barberia/public/editar_perfil" method="POST" enctype="multipart/form-data">
+        <form action="/public/editar_perfil" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="update_profile" value="1">
             
             <div class="form-group">
@@ -228,7 +228,7 @@ $stmtHorarios->close();
             <?php endif; ?>
         </div>
 
-        <form action="/saas-barberia/public/editar_perfil" method="POST" style="display: flex; gap: 10px;">
+        <form action="/public/editar_perfil" method="POST" style="display: flex; gap: 10px;">
             <input type="hidden" name="add_hour" value="1">
             <div style="flex: 2;" class="form-group"><input type="time" name="available_time" required style="margin: 0;"></div>
             <button type="submit" class="btn-submit" style="flex: 1; margin: 0; height: 48px;"><i class="fa-solid fa-plus"></i> Agregar Hora</button>
