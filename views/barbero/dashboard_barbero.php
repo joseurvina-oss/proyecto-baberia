@@ -25,6 +25,25 @@ if ($estadoSub === 'inactive' || ($expiraSub && $expiraSub < $ahora)) {
     exit;
 }
 
+// -------------------------------------------------------------
+// AUTO-LIMPIEZA: Borra de la BD las citas cuya fecha y hora ya pasaron
+// -------------------------------------------------------------
+$fechaActual = date('Y-m-d');
+$horaActual = date('H:i:s');
+$stmtClean = $conn->prepare("
+    DELETE FROM bookings 
+    WHERE staff_id = ? 
+      AND (
+          appointment_date < ? 
+          OR (appointment_date = ? AND appointment_time < ?)
+      )
+");
+if ($stmtClean) {
+    $stmtClean->bind_param("isss", $barber_id, $fechaActual, $fechaActual, $horaActual);
+    $stmtClean->execute();
+    $stmtClean->close();
+}
+
 $barberData = [
     'name' => $_SESSION['barber_name'] ?? 'Barbero',
     'phone' => '',
@@ -34,24 +53,30 @@ $barberData = [
     'google_access_token' => ''
 ];
 
-$stmtBarber =$conn->prepare("SELECT * FROM barbers WHERE id = ?");
-if ($stmtBarber) {$stmtBarber->bind_param("i", $barber_id);$stmtBarber->execute();
-    $resBarber =$stmtBarber->get_result();
-    if ($row = $resBarber->fetch_assoc()) {$barberData = array_merge($barberData,$row);
+$stmtBarber = $conn->prepare("SELECT * FROM barbers WHERE id = ?");
+if ($stmtBarber) {
+    $stmtBarber->bind_param("i", $barber_id);
+    $stmtBarber->execute();
+    $resBarber = $stmtBarber->get_result();
+    if ($row = $resBarber->fetch_assoc()) {
+        $barberData = array_merge($barberData, $row);
     }
     $stmtBarber->close();
 }
 
+// Listar citas vigentes ordenadas de la más próxima a la más lejana (ASC)
 $citasResult = null;
-$stmtCitas =$conn->prepare("SELECT * FROM bookings WHERE staff_id = ? ORDER BY appointment_date DESC, appointment_time DESC");
-if ($stmtCitas) {$stmtCitas->bind_param("i", $barber_id);$stmtCitas->execute();
-    $citasResult =$stmtCitas->get_result();
+$stmtCitas = $conn->prepare("SELECT * FROM bookings WHERE staff_id = ? ORDER BY appointment_date ASC, appointment_time ASC");
+if ($stmtCitas) {
+    $stmtCitas->bind_param("i", $barber_id);
+    $stmtCitas->execute();
+    $citasResult = $stmtCitas->get_result();
 }
 
 // Ruta dinámica limpia para Railway
-$protocol = (isset($_SERVER['HTTPS']) &&$_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) &&$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? "https" : "http";
-$host =$_SERVER['HTTP_HOST'];
-$enlaceReservas =$protocol . "://" . $host . "/public/reserva?staff_id=" . $barber_id;
+$protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'];
+$enlaceReservas = $protocol . "://" . $host . "/public/reserva?staff_id=" . $barber_id;
 $isGoogleConnected = !empty($barberData['google_access_token']);
 ?>
 <!DOCTYPE html>
@@ -152,7 +177,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
             <h2 style="text-align: left; font-size: 20px; margin-bottom: 5px;"><i class="fa-solid fa-calendar-days" style="color: #e11d48;"></i> Tus Citas <span>Agendadas</span></h2>
             <p style="margin-bottom: 20px;">Historial y reservas asignadas exclusivamente a tu agenda</p>
 
-            <?php if ($citasResult &&$citasResult->num_rows > 0): ?>
+            <?php if ($citasResult && $citasResult->num_rows > 0): ?>
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
@@ -166,13 +191,13 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while($cita =$citasResult->fetch_assoc()): ?>
+                            <?php while($cita = $citasResult->fetch_assoc()): ?>
                                 <tr>
                                     <td><strong><?php echo htmlspecialchars($cita['client_name']); ?></strong></td>
                                     <td>
                                         <?php 
-                                            $phoneVal =$cita['client_phone'];
-                                            $cleanPhone = preg_replace('/[^0-9]/', '',$phoneVal);
+                                            $phoneVal = $cita['client_phone'];
+                                            $cleanPhone = preg_replace('/[^0-9]/', '', $phoneVal);
                                         ?>
                                         <a href="https://wa.me/<?php echo $cleanPhone; ?>" target="_blank" style="color: #22c55e; text-decoration: none; font-weight: 600;">
                                             <i class="fa-brands fa-whatsapp"></i> <?php echo htmlspecialchars($phoneVal); ?>
@@ -213,7 +238,7 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
     }
 </script>
 
-<?php if (isset($_GET['google']) &&$_GET['google'] === 'success'): ?>
+<?php if (isset($_GET['google']) && $_GET['google'] === 'success'): ?>
 <script>
     Swal.fire({
         title: '¡Google Calendar Conectado!',
@@ -229,5 +254,6 @@ $isGoogleConnected = !empty($barberData['google_access_token']);
 </body>
 </html>
 <?php 
-if (isset($stmtCitas)) $stmtCitas->close();$conn->close(); 
+if (isset($stmtCitas)) $stmtCitas->close();
+$conn->close(); 
 ?>
